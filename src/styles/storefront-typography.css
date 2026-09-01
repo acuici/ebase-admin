@@ -1,0 +1,99 @@
+/* 独立站控制中心排版层级：区块标题、主要内容、辅助信息。 */
+.storefront-page,
+.storefront-section,
+.storefront-editor,
+.storefront-page button,
+.storefront-section button,
+.storefront-editor button,
+.storefront-editor input,
+.storefront-editor select,
+.storefront-editor textarea {
+  font-family: inherit;
+}
+
+.storefront-sites h2,
+.channel-health h2,
+.storefront-quick h2,
+.storefront-tool h3 {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.storefront-sites header p {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.storefront-metrics .metric-item > span,
+.storefront-section-metrics .metric-item > span {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.storefront-metrics .metric-item small,
+.storefront-section-metrics .metric-item small {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.site-row strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.site-row small {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.site-row > span:nth-child(3) {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.site-row i {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.storefront-tool p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.storefront-tool small {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.channel-health > header span {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.channel-health li b,
+.storefront-quick button span {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.channel-health li small,
+.storefront-quick button b {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.storefront-data > header > span,
+.storefront-editor .editor-section textarea {
+  font-size: 12px;
+  line-height: 1.5;
+}
