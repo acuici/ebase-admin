@@ -11,6 +11,7 @@ import ForgotPasswordView from '../views/ForgotPasswordView.vue'
 import MemberDirectoryView from '../views/MemberDirectoryView.vue'
 import MemberEditorView from '../views/MemberEditorView.vue'
 import MemberProfileView from '../views/MemberProfileView.vue'
+import RoleEditorView from '../views/RoleEditorView.vue'
 import StorefrontView from '../views/StorefrontView.vue'
 import StorefrontSectionView from '../views/StorefrontSectionView.vue'
 
@@ -59,7 +60,7 @@ const router = createRouter({
     { path: '/coupons/new', name: 'coupon-create', component: WorkflowView, props: { type: 'coupon' }, meta: { title: '新建优惠券' } },
     { path: '/marketing/new', name: 'marketing-create', component: WorkflowView, props: { type: 'marketing' }, meta: { title: '新建营销活动' } },
     { path: '/reports/analysis', name: 'report-analysis', component: WorkflowView, props: { type: 'report' }, meta: { title: '经营分析详情' } },
-    { path: '/settings/roles/:id', name: 'role-edit', component: WorkflowView, props: { type: 'settings' }, meta: { title: '角色权限编辑' } },
+    { path: '/settings/roles/:id', name: 'role-edit', component: RoleEditorView, props: true, meta: { title: '角色权限编辑' } },
   ],
 })
 
