@@ -34,7 +34,7 @@ class Member extends Model
      */
     public function getPermissionCodes(): array
     {
-        return \think\facade\Cache::remember('ebase:perm:member:' . $this->id, function () {
+        return \think\facade\Cache::store('redis')->remember('perm:member:' . $this->id, function () {
             $codes = [];
             foreach ($this->roles as $role) {
                 if (!$role->is_active) {

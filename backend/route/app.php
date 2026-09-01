@@ -22,6 +22,7 @@ Route::get('api/v1/health', function () {
 Route::group('api/v1/auth', function () {
     Route::post('login', 'AuthController/login');
     Route::post('refresh', 'AuthController/refresh');
+    Route::post('password/reset', 'AuthController/resetPassword');
 });
 
 // ---- 认证（需登录） ----
@@ -36,23 +37,20 @@ Route::group('api/v1/member', function () {
     Route::delete('sessions/:id', 'MemberController/revokeSession');
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
-// ---- 系统设置：成员与角色（需登录 + 权限） ----
+// ---- 系统设置：成员与角色（需登录 + 显式权限） ----
 Route::group('api/v1/admin', function () {
-    // 成员目录
-    Route::get('members', 'MemberAdminController/index');
-    Route::get('members/:id', 'MemberAdminController/read');
-    Route::post('members/invite', 'MemberAdminController/invite');
-    Route::put('members/:id', 'MemberAdminController/update');
-    Route::post('members/:id/disable', 'MemberAdminController/disable');
-    Route::post('members/:id/reset-password', 'MemberAdminController/resetPassword');
-
-    // 角色
-    Route::get('roles', 'RoleController/index');
-    Route::post('roles', 'RoleController/create');
-    Route::get('roles/:id', 'RoleController/read');
-    Route::put('roles/:id', 'RoleController/update');
-    Route::delete('roles/:id', 'RoleController/delete');
-})->middleware([\app\common\middleware\AuthMiddleware::class, \app\common\middleware\PermissionMiddleware::class]);
+    Route::get('members', 'MemberAdminController/index')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.member.read');
+    Route::get('members/:id', 'MemberAdminController/read')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.member.read');
+    Route::post('members/invite', 'MemberAdminController/invite')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.member.invite');
+    Route::put('members/:id', 'MemberAdminController/update')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.member.update');
+    Route::post('members/:id/disable', 'MemberAdminController/disable')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.member.disable');
+    Route::post('members/:id/reset-password', 'MemberAdminController/resetPassword')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.member.reset_password');
+    Route::get('roles', 'RoleController/index')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.role.read');
+    Route::post('roles', 'RoleController/create')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.role.create');
+    Route::get('roles/:id', 'RoleController/read')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.role.read');
+    Route::put('roles/:id', 'RoleController/update')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.role.update');
+    Route::delete('roles/:id', 'RoleController/delete')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.role.delete');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
 
 // ---- 渠道订单与履约 ----
 Route::post('api/v1/channel-orders/import', 'ChannelOrderController/import')->middleware(\app\common\middleware\AuthMiddleware::class);

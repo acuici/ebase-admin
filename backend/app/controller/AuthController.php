@@ -112,6 +112,25 @@ class AuthController extends ApiController
     }
 
     /**
+     * 完成密码重置：令牌仅存在 Redis，使用后立即销毁；同时撤销所有旧会话。
+     */
+    public function resetPassword(Request $request): Response
+    {
+        $this->validate($request->post(), ['reset_token' => 'require|length:48', 'password' => 'require|min:12|max:128'], ['reset_token.require' => '重置令牌不能为空', 'password.min' => '密码至少 12 位']);
+        $data = $request->post();
+        $key = 'auth:password-reset:' . $data['reset_token'];
+        $record = \think\facade\Cache::store('redis')->get($key);
+        if (!$record) throw BusinessException::unauthenticated('重置令牌无效或已过期');
+        \think\facade\Cache::store('redis')->delete($key);
+        $record = json_decode($record, true);
+        $member = Member::find((int)$record['member_id']);
+        if (!$member) throw BusinessException::notFound('成员不存在');
+        $member->save(['password_hash' => password_hash($data['password'], PASSWORD_DEFAULT)]);
+        \think\facade\Db::name('member_sessions')->where('member_id', $member->id)->whereNull('revoked_at')->update(['revoked_at' => date('Y-m-d H:i:s')]);
+        return $this->success(null, '密码已重置，请重新登录');
+    }
+
+    /**
      * 登出
      */
     public function logout(Request $request): Response
