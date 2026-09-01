@@ -21,6 +21,12 @@ Apply schema:
 for f in database/schema/*.sql; do docker exec -i mall-platform-mysql-1 mysql -uebase -pebase_dev_pass ebase < "$f"; done
 ```
 
+Load repeatable development demo data (never production):
+
+```bash
+docker exec -i mall-platform-mysql-1 mysql -uebase -pebase_dev_pass ebase < database/seed/dev.sql
+```
+
 The development seed admin is documented only for local use:
 
 - email: `admin@ebase.local`
