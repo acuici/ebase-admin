@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowRight, Download, Plus, RotateCcw, Search } from 'lucide-vue-next'
 import { useToast } from '../composables/useToast'
 import TableState from '../components/common/TableState.vue'
 import DateRangePicker, { type DateRangeValue } from '../components/common/DateRangePicker.vue'
 import ToolbarSelect from '../components/common/ToolbarSelect.vue'
+import { getDashboardStats, type DashboardStats } from '../api/operations'
 
 const router = useRouter()
 const { info, success } = useToast()
@@ -26,13 +27,20 @@ const currentPath = computed(() => linePath(chartPoints.value))
 const previousPath = computed(() => linePath(chartPrevious.value))
 const chartEndY = computed(()=>200-chartPoints.value.at(-1)!*1.55)
 
-const metrics = [
-  { label: '今日成交额', value: '¥286,742.80', delta: '+12.6%', note: '较昨日' },
-  { label: '支付订单', value: '1,846', delta: '+8.4%', note: '较昨日' },
-  { label: '客单价', value: '¥155.33', delta: '+3.1%', note: '较昨日' },
-  { label: '退款率', value: '1.82%', delta: '-0.3%', note: '较昨日', positive: true },
-  { label: '待发货', value: '126', delta: '18 单超时', note: '', warning: true },
-]
+const dashboardStats=ref<DashboardStats|null>(null)
+const loading=ref(true)
+async function loadDashboard(){try{dashboardStats.value=await getDashboardStats()}finally{loading.value=false}}
+onMounted(()=>void loadDashboard())
+
+const metrics = computed(() => [
+  { label: '商品数', value: formatMetric(dashboardStats.value?.products), delta: '', note: '数据库真实数据' },
+  { label: 'SKU 数', value: formatMetric(dashboardStats.value?.skus), delta: '', note: '数据库真实数据' },
+  { label: '消费者', value: formatMetric(dashboardStats.value?.customers), delta: '', note: '数据库真实数据' },
+  { label: '订单数', value: formatMetric(dashboardStats.value?.orders), delta: '', note: '数据库真实数据' },
+  { label: '待处理订单', value: formatMetric(dashboardStats.value?.pending_orders), delta: '', note: '数据库真实数据' },
+])
+function formatMetric(value: number | undefined): string { return value === undefined ? '—' : value.toLocaleString('zh-CN') }
+
 
 const todos = [
   ['审核退款申请', '12', '高', '周宁', '8 分钟前'],
@@ -97,7 +105,7 @@ function clearOrderFilters(){orderQuery.value='';orderStatus.value='全部状态
       <article v-for="metric in metrics" :key="metric.label" class="metric-item">
         <span>{{ metric.label }}</span>
         <strong>{{ metric.value }}</strong>
-        <small :class="{ warning: metric.warning }"><b>{{ metric.delta }}</b>{{ metric.note }}</small>
+        <small><b>{{ metric.delta }}</b>{{ metric.note }}</small>
       </article>
     </section>
 
