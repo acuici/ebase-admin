@@ -12,5 +12,7 @@ import './styles/feature-hub.css'
 import './styles/crud.css'
 import './styles/crud-validation.css'
 import './styles/members.css'
+import './styles/feedback.css'
+import './styles/storefront.css'
 
 createApp(App).use(router).mount('#app')

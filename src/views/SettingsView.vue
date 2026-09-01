@@ -2,8 +2,9 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Bell, Building2, Check, ChevronRight, CreditCard, FileClock, LockKeyhole, Save, Settings2, ShieldCheck, Store, Users, Warehouse } from 'lucide-vue-next'
+import { useToast } from '../composables/useToast'
 
-const router=useRouter(); const active=ref('company'); const saved=ref(false)
+const router=useRouter(); const active=ref('company'); const saved=ref(false); const {success}=useToast()
 const sections=[{id:'company',label:'企业信息',icon:Building2},{id:'members',label:'成员与角色',icon:Users},{id:'channels',label:'店铺与渠道',icon:Store},{id:'warehouse',label:'仓库配置',icon:Warehouse},{id:'payment',label:'支付配置',icon:CreditCard},{id:'notifications',label:'消息通知',icon:Bell},{id:'security',label:'安全设置',icon:LockKeyhole},{id:'logs',label:'操作日志',icon:FileClock}]
 const configs:Record<string,{title:string;description:string;groups:{title:string;description:string;fields:{label:string;value:string;type?:string;hint?:string}[]}[]}>= {
 company:{title:'企业信息',description:'维护企业主体、品牌信息和默认经营配置。',groups:[{title:'企业资料',description:'用于后台展示、合同与业务单据。',fields:[{label:'企业名称',value:'上海清透商业有限公司'},{label:'企业简称',value:'EBASE'},{label:'统一社会信用代码',value:'91310000MA1FL8XK26'},{label:'所属行业',value:'零售 / 电商',type:'select'},{label:'企业地址',value:'上海市浦东新区世纪大道 100 号'},{label:'客服热线',value:'400-820-2026'}]},{title:'品牌与区域',description:'设置系统品牌和默认时区。',fields:[{label:'系统名称',value:'EBASE 商业运营后台'},{label:'默认语言',value:'简体中文',type:'select'},{label:'默认时区',value:'Asia/Shanghai (UTC+8)',type:'select'},{label:'默认货币',value:'人民币 CNY',type:'select'}]}]},
@@ -15,7 +16,7 @@ notifications:{title:'消息通知',description:'配置系统事件、接收人�
 security:{title:'安全设置',description:'保护账号、数据和高风险操作。',groups:[{title:'登录安全',description:'企业成员的身份验证策略。',fields:[{label:'双重验证',value:'管理员和财务角色强制开启',type:'select'},{label:'密码有效期',value:'90 天',type:'select'},{label:'登录失败锁定',value:'连续 5 次失败锁定 30 分钟',type:'select'},{label:'异地登录',value:'阻止并通知管理员',type:'select'}]},{title:'数据与操作安全',description:'高风险操作和数据访问控制。',fields:[{label:'敏感数据脱敏',value:'手机号、地址、证件号',type:'select'},{label:'批量导出审批',value:'超过 5,000 条需要审批',type:'select'},{label:'操作日志留存',value:'180 天',type:'select'},{label:'会话超时',value:'无操作 2 小时',type:'select'}]}]},
 logs:{title:'操作日志',description:'查看系统配置和权限变更记录。',groups:[{title:'日志筛选',description:'按操作者、模块和风险等级检索。',fields:[{label:'时间范围',value:'近 7 天',type:'select'},{label:'操作模块',value:'全部模块',type:'select'},{label:'风险等级',value:'全部等级',type:'select'},{label:'操作结果',value:'全部结果',type:'select'}]},{title:'最近高风险操作',description:'需要管理员复核的关键操作。',fields:[{label:'今天 10:42 · 林知夏',value:'导出高价值用户 8,642 条'},{label:'今天 09:18 · 陈曦',value:'修改营销主管审批权限'},{label:'昨天 18:06 · 系统',value:'拦截异地登录 183.6.82.14'},{label:'昨天 16:32 · 周宁',value:'批量调整 286 个 SKU 库存'}]}]}
 }
-const current=computed(()=>configs[active.value]); function save(){saved.value=true;setTimeout(()=>saved.value=false,2000)}
+const current=computed(()=>configs[active.value]); function save(){saved.value=true;success('系统设置已保存',current.value.title);setTimeout(()=>saved.value=false,2000)}
 </script>
 
 <template><section class="settings-page"><div class="page-heading"><div><span class="eyebrow">ADMINISTRATION · 系统配置</span><h1>权限与系统设置</h1><p>集中管理企业、渠道、支付、安全和组织权限。</p></div><div class="heading-actions"><span v-if="saved" class="saved-toast"><Check :size="14"/>设置已保存</span><button class="button primary" @click="save"><Save :size="16"/>保存全部更改</button></div></div>

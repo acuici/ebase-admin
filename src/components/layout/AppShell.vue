@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from '../../composables/useToast'
 import {
   BarChart3, Bell, Box, Check, ChevronDown, CircleHelp, ClipboardList, FileText,
   Gift, LayoutDashboard, Megaphone, Menu, PackageSearch, Search, Settings,
-  TicketPercent, Truck, Users, Warehouse, X, Grid3X3, LogOut, ShieldCheck, UserRound,
+  TicketPercent, Truck, Users, Warehouse, X, Grid3X3, LogOut, ShieldCheck, UserRound, Globe2,
 } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
+const {success}=useToast()
 const mobileOpen = ref(false)
 const accountOpen = ref(false)
 const accountArea = ref<HTMLElement | null>(null)
@@ -27,6 +29,7 @@ const navItems = [
   { to: '/coupons', label: '优惠券管理', icon: TicketPercent },
   { to: '/marketing', label: '营销活动', icon: Megaphone },
   { to: '/reports', label: '数据报表', icon: BarChart3 },
+  { to: '/storefront', label: '独立站', icon: Globe2 },
   { to: '/settings', label: '权限与系统设置', icon: Settings },
   { to: '/features', label: '功能地图', icon: Grid3X3 },
 ]
@@ -34,7 +37,7 @@ const pageTitle = computed(() => String(route.meta.title || '运营控制台'))
 function isNavActive(path:string){return path==='/'?route.path==='/' : route.path===path||route.path.startsWith(`${path}/`)}
 function openAccountPage(tab:string){accountOpen.value=false;router.push({path:'/member/profile',query:{tab}})}
 function logout(){accountOpen.value=false;localStorage.removeItem('ebase:session');router.push('/login')}
-function selectStore(store:string){selectedStore.value=store;storeOpen.value=false;localStorage.setItem('ebase:selected-store',store)}
+function selectStore(store:string){selectedStore.value=store;storeOpen.value=false;localStorage.setItem('ebase:selected-store',store);success('经营视图已切换',`当前显示：${store}`)}
 function toggleAccount(){storeOpen.value=false;accountOpen.value=!accountOpen.value}
 function toggleStore(){accountOpen.value=false;storeOpen.value=!storeOpen.value}
 function closeMenusOnOutside(event:MouseEvent){const target=event.target as Node;if(accountArea.value&&!accountArea.value.contains(target))accountOpen.value=false;if(storeArea.value&&!storeArea.value.contains(target))storeOpen.value=false}

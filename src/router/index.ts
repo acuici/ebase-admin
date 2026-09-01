@@ -10,6 +10,8 @@ import ForgotPasswordView from '../views/ForgotPasswordView.vue'
 import MemberDirectoryView from '../views/MemberDirectoryView.vue'
 import MemberEditorView from '../views/MemberEditorView.vue'
 import MemberProfileView from '../views/MemberProfileView.vue'
+import StorefrontView from '../views/StorefrontView.vue'
+import StorefrontSectionView from '../views/StorefrontSectionView.vue'
 
 const modules = [
   ['orders', '订单管理'],
@@ -36,6 +38,10 @@ export default createRouter({
     { path: '/settings/members/invite', name: 'member-invite', component: MemberEditorView, props: { mode: 'invite' }, meta: { title: '邀请成员' } },
     { path: '/settings/members/:id', name: 'member-detail', component: MemberEditorView, props: { mode: 'edit' }, meta: { title: '成员详情' } },
     { path: '/member/profile', name: 'member-profile', component: MemberProfileView, meta: { title: '个人资料' } },
+    { path: '/storefront', name: 'storefront', component: StorefrontView, meta: { title: '独立站' } },
+    { path: '/storefront/sites/new', name: 'storefront-site-create', component: StorefrontSectionView, props: { section: 'site-editor', mode: 'create' }, meta: { title: '新建独立站' } },
+    { path: '/storefront/sites/:id', name: 'storefront-site-edit', component: StorefrontSectionView, props: { section: 'site-editor', mode: 'edit' }, meta: { title: '站点设置' } },
+    { path: '/storefront/:section', name: 'storefront-section', component: StorefrontSectionView, props: true, meta: { title: '独立站管理' } },
     ...modules.map(([path, title]) => ({
       path: `/${path}`,
       name: path,
