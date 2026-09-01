@@ -84,6 +84,9 @@ Route::group('api/v1/storefront/sites', function () {
     Route::put('/:siteId/products/:productId', 'StorefrontListingController/upsert');
     Route::get('/:siteId/content', 'StorefrontContentController/index');
     Route::put('/:siteId/content', 'StorefrontContentController/upsert');
+    Route::get('/:siteId/content/:id', 'StorefrontContentController/read');
+    Route::post('/:siteId/content/:id/publish', 'StorefrontContentController/publish');
+    Route::delete('/:siteId/content/:id', 'StorefrontContentController/delete');
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
 // ---- 支付 ----

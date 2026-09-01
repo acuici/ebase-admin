@@ -15,7 +15,9 @@ class OrderController extends ApiController
         $page=max(1,(int)$request->get('page',1)); $size=min(100,max(1,(int)$request->get('page_size',20)));
         $query=Order::with('items');
         if ($status=$request->get('status')) $query->where('status',$status);
-        if ($no=trim((string)$request->get('order_no',''))) $query->whereLike('order_no','%'.addcslashes($no,'%_').'%');
+        if ($channel=$request->get('channel_type')) $query->where('channel_type',$channel);
+        if ($storeId=$request->get('channel_store_id')) $query->where('channel_store_id',(int)$storeId);
+        if ($no=trim((string)$request->get('order_no',''))) $query->whereLike('order_no|external_order_no','%'.addcslashes($no,'%_').'%');
         $total=$query->count(); $items=$query->order('id','desc')->page($page,$size)->select();
         return $this->paginated($items,$page,$size,$total);
     }
