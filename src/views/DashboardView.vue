@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowRight, CalendarDays, ChevronDown, Download, Plus, RotateCcw, Search } from 'lucide-vue-next'
+import { ArrowRight, ChevronDown, Download, Plus, RotateCcw, Search } from 'lucide-vue-next'
 import { useToast } from '../composables/useToast'
 import TableState from '../components/common/TableState.vue'
+import DateRangePicker, { type DateRangeValue } from '../components/common/DateRangePicker.vue'
 
 const router = useRouter()
 const { info, success } = useToast()
 const range = ref<'14d' | '30d'>('14d')
-const period = ref('today')
+const dashboardDates=ref<DateRangeValue>({start:'2026-08-31',end:'2026-09-02',preset:3})
 const orderQuery = ref('')
 const orderStatus = ref('全部状态')
 const statusOpen = ref(false)
@@ -68,7 +69,7 @@ const filteredOrders = computed(() => orders.filter(order => {
   return matchesKeyword && matchesStatus
 }))
 const todoRoutes: Record<string,string> = {'审核退款申请':'/features/refunds','处理异常订单':'/orders','回复客户咨询':'/users','发布内容草稿':'/content','配置即将到期优惠券':'/coupons'}
-function changePeriod(){info('统计周期已切换',period.value==='today'?'当前展示今日经营数据':'当前展示近 7 天经营数据')}
+function changePeriod(value:DateRangeValue){info('统计周期已切换',`${value.start} 至 ${value.end}`)}
 function exportReport(){info('导出任务已受理','报表服务尚未接入，正式接口可用后将在下载中心生成文件。')}
 function openTodo(todo:string){const target=todoRoutes[todo];if(target){router.push(target);return}info('功能正在接入','商家入驻审核后端尚未开放，需求已保留在待办列表。')}
 function refreshStructure(){if(refreshing.value)return;refreshing.value=true;window.setTimeout(()=>{refreshing.value=false;success('订单结构已刷新','当前展示最新统计快照。')},500)}
@@ -91,7 +92,7 @@ onBeforeUnmount(()=>{document.removeEventListener('click',closeStatusMenu);docum
         <p>聚焦今天最重要的经营变化与待处理事项。</p>
       </div>
       <div class="heading-actions">
-        <label class="button secondary dashboard-period"><CalendarDays :size="16" /><select v-model="period" aria-label="统计周期" @change="changePeriod"><option value="today">今日</option><option value="7d">近 7 天</option></select><ChevronDown :size="15" /></label>
+        <DateRangePicker v-model="dashboardDates" @change="changePeriod" />
         <button class="button secondary" @click="exportReport"><Download :size="16" />导出报表</button>
         <button class="button primary" @click="router.push('/marketing/new')"><Plus :size="16" />新建活动</button>
       </div>
