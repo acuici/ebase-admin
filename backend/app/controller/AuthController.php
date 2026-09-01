@@ -7,6 +7,7 @@ use app\common\controller\ApiController;
 use app\common\exception\BusinessException;
 use app\common\model\Member;
 use app\common\service\JwtService;
+use app\common\service\MemberAuthAuditService;
 use think\facade\Db;
 use think\Request;
 use think\Response;
@@ -37,6 +38,12 @@ class AuthController extends ApiController
         $data = $request->post();
         $member = Member::where('email', $data['email'])->find();
         if (!$member || !$member->verifyPassword($data['password'])) {
+            (new MemberAuthAuditService())->record(
+                $member?->id ? (int) $member->id : null,
+                $data['email'],
+                'login_failed',
+                $request,
+            );
             throw BusinessException::unauthenticated('邮箱或密码错误');
         }
         if ($member->status !== 1) {
@@ -53,6 +60,14 @@ class AuthController extends ApiController
             'created_at' => date('Y-m-d H:i:s'),
             'last_seen'  => date('Y-m-d H:i:s'),
         ]);
+
+        (new MemberAuthAuditService())->record(
+            (int) $member->id,
+            $member->email,
+            'login_success',
+            $request,
+            ['session_id' => $sessionId],
+        );
 
         $jwt = new JwtService();
         $refreshToken = $jwt->issueRefreshToken((int) $member->id, $sessionId, $request->header('User-Agent', ''));
@@ -127,6 +142,7 @@ class AuthController extends ApiController
         if (!$member) throw BusinessException::notFound('成员不存在');
         $member->save(['password_hash' => password_hash($data['password'], PASSWORD_DEFAULT)]);
         \think\facade\Db::name('member_sessions')->where('member_id', $member->id)->whereNull('revoked_at')->update(['revoked_at' => date('Y-m-d H:i:s')]);
+        (new MemberAuthAuditService())->record((int) $member->id, $member->email, 'password_reset', $request);
         return $this->success(null, '密码已重置，请重新登录');
     }
 
@@ -139,6 +155,14 @@ class AuthController extends ApiController
         $sessionId = (string) $request->sessionId;
         if ($sessionId !== '') {
             $jwt->revokeSession($sessionId);
+            $member = $this->currentMember();
+            (new MemberAuthAuditService())->record(
+                $member ? (int) $member->id : null,
+                $member?->email,
+                'logout',
+                $request,
+                ['session_id' => $sessionId],
+            );
         }
         return $this->success(null, '已退出登录');
     }

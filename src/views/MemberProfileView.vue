@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Bell, Check, KeyRound, LogOut, Save, ShieldCheck, UserRound } from 'lucide-vue-next'
+import { listAuthLogs, listSessions, revokeSession, type AuthLog, type MemberSession } from '../api/security'
 import { ApiError } from '../api/client'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
@@ -14,6 +15,9 @@ const validTabs = ['profile', 'security', 'notifications']
 const tab = ref(validTabs.includes(String(route.query.tab)) ? String(route.query.tab) : 'profile')
 const loading = ref(true)
 const saving = ref(false)
+const securityLoading = ref(false)
+const sessions = ref<MemberSession[]>([])
+const authLogs = ref<AuthLog[]>([])
 const form = reactive({
   name: '',
   phone: '',
@@ -54,6 +58,39 @@ async function save(): Promise<void> {
   }
 }
 
+async function loadSecurity(): Promise<void> {
+  securityLoading.value = true
+  try {
+    const [sessionData, logData] = await Promise.all([listSessions(), listAuthLogs()])
+    sessions.value = sessionData
+    authLogs.value = logData.items
+  } catch (exception) {
+    showError('安全信息加载失败', exception instanceof ApiError ? exception.body.message : '请稍后重试')
+  } finally {
+    securityLoading.value = false
+  }
+}
+
+async function revokeDevice(sessionId: string): Promise<void> {
+  try {
+    await revokeSession(sessionId)
+    success('设备会话已撤销')
+    await loadSecurity()
+  } catch (exception) {
+    showError('撤销失败', exception instanceof ApiError ? exception.body.message : '请稍后重试')
+  }
+}
+
+function authEventLabel(event: AuthLog['event_type']): string {
+  return {
+    login_success: '登录成功',
+    login_failed: '登录失败',
+    logout: '主动登出',
+    password_reset: '密码重置',
+    session_revoked: '会话已撤销',
+  }[event]
+}
+
 async function signOut(): Promise<void> {
   await logout()
   await router.push('/login')
@@ -62,11 +99,13 @@ async function signOut(): Promise<void> {
 watch(() => route.query.tab, value => {
   const next = String(value || 'profile')
   tab.value = validTabs.includes(next) ? next : 'profile'
+  if (tab.value === 'security') void loadSecurity()
 })
 
 onMounted(async () => {
   await hydrate()
   syncForm()
+  if (tab.value === 'security') await loadSecurity()
   loading.value = false
 })
 </script>
@@ -120,8 +159,26 @@ onMounted(async () => {
 
         <template v-else-if="tab === 'security'">
           <article class="surface editor-section">
-            <header><span><KeyRound :size="18" /></span><div><h2>登录安全</h2><p>密码重置后，所有旧设备会话会被撤销。</p></div></header>
-            <div class="security-cards"><div><span><ShieldCheck :size="19" /></span><div><b>账户状态</b><small>{{ member?.status === 1 ? '当前账号正常可用' : '账号已停用' }}</small></div></div><div><span><KeyRound :size="19" /></span><div><b>密码重置</b><small>请由管理员在成员管理中发起安全重置。</small></div></div></div>
+            <header><span><KeyRound :size="18" /></span><div><h2>登录设备</h2><p>设备会话来自真实后台记录，可撤销非当前设备。</p></div></header>
+            <p v-if="securityLoading">正在加载登录设备与安全日志...</p>
+            <div v-else class="security-cards">
+              <div v-for="session in sessions" :key="session.session_id">
+                <span><ShieldCheck :size="19" /></span>
+                <div><b>{{ session.device || '未知设备' }}</b><small>{{ session.ip || '未知 IP' }} · 最近活动 {{ session.last_seen || session.created_at }}</small></div>
+                <button @click="revokeDevice(session.session_id)">撤销</button>
+              </div>
+              <p v-if="!sessions.length">没有活动登录设备。</p>
+            </div>
+          </article>
+          <article class="surface editor-section">
+            <header><span><ShieldCheck :size="18" /></span><div><h2>登录与安全日志</h2><p>记录登录成功、失败、登出、密码重置与会话撤销。</p></div></header>
+            <div class="security-cards">
+              <div v-for="log in authLogs" :key="log.id">
+                <span><KeyRound :size="19" /></span>
+                <div><b>{{ authEventLabel(log.event_type) }}</b><small>{{ log.ip || '未知 IP' }} · {{ log.created_at }}</small></div>
+              </div>
+              <p v-if="!securityLoading && !authLogs.length">暂无安全日志；下一次登录后会自动生成。</p>
+            </div>
           </article>
         </template>
 

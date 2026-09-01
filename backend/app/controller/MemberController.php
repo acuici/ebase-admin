@@ -6,6 +6,7 @@ namespace app\controller;
 use app\common\controller\ApiController;
 use app\common\exception\BusinessException;
 use app\common\service\JwtService;
+use app\common\service\MemberAuthAuditService;
 use think\facade\Db;
 use think\Request;
 use think\Response;
@@ -82,6 +83,18 @@ final class MemberController extends ApiController
         return $this->success($items);
     }
 
+    public function authLogs(Request $request): Response
+    {
+        $member = $this->requireMember();
+        $page = max(1, (int) $request->get('page', 1));
+        $pageSize = min(100, max(1, (int) $request->get('page_size', 20)));
+        $query = Db::name('member_auth_logs')->where('member_id', $member->id);
+        $total = $query->count();
+        $items = $query->order('id', 'desc')->page($page, $pageSize)->select();
+
+        return $this->paginated($items, $page, $pageSize, $total);
+    }
+
     public function revokeSession(Request $request, string $id): Response
     {
         $member = $this->requireMember();
@@ -96,6 +109,7 @@ final class MemberController extends ApiController
         }
 
         (new JwtService())->revokeRefreshToken($id);
+        (new MemberAuthAuditService())->record((int) $member->id, $member->email, 'session_revoked', $request, ['session_id' => $id]);
         return $this->success(null, '设备会话已撤销');
     }
 }

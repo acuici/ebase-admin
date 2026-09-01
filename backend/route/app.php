@@ -35,6 +35,7 @@ Route::group('api/v1/member', function () {
     Route::get('profile', 'MemberController/profile');
     Route::patch('profile', 'MemberController/updateProfile');
     Route::get('sessions', 'MemberController/sessions');
+    Route::get('auth-logs', 'MemberController/authLogs');
     Route::delete('sessions/:id', 'MemberController/revokeSession');
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
