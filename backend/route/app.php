@@ -54,6 +54,16 @@ Route::group('api/v1/admin', function () {
     Route::delete('roles/:id', 'RoleController/delete');
 })->middleware([\app\common\middleware\AuthMiddleware::class, \app\common\middleware\PermissionMiddleware::class]);
 
+// ---- 渠道订单与履约 ----
+Route::post('api/v1/channel-orders/import', 'ChannelOrderController/import')->middleware(\app\common\middleware\AuthMiddleware::class);
+Route::group('api/v1', function () {
+    Route::get('orders/:orderId/fulfillments', 'FulfillmentController/index');
+    Route::post('orders/:orderId/fulfillments', 'FulfillmentController/create');
+    Route::post('fulfillments/:id/ship', 'FulfillmentController/ship');
+    Route::get('shipment-packages/:packageId/tracking-events', 'FulfillmentController/tracking');
+    Route::post('shipment-packages/:packageId/tracking-events', 'FulfillmentController/addTracking');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+
 // ---- 独立站 ----
 Route::group('api/v1/storefront/sites', function () {
     Route::get('/', 'StorefrontSiteController/index');
