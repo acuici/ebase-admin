@@ -45,7 +45,7 @@ final class OperationsController extends ApiController
 
     private function products(string $keyword, int $page, int $size): array
     {
-        $query = Db::name('products')->alias('p')->field("p.id,p.product_no,p.name,p.brand,p.status,p.created_at,COALESCE((SELECT MIN(s1.price) FROM product_skus s1 WHERE s1.product_id=p.id),0) AS min_price,COALESCE((SELECT MAX(s2.price) FROM product_skus s2 WHERE s2.product_id=p.id),0) AS max_price,(SELECT COUNT(*) FROM product_skus s3 WHERE s3.product_id=p.id) AS sku_count,COALESCE((SELECT SUM(s4.stock_quantity-s4.reserved_quantity) FROM product_skus s4 WHERE s4.product_id=p.id),0) AS available_stock,(SELECT COUNT(*) FROM storefront_product_listings l WHERE l.product_id=p.id AND l.status IN ('published','scheduled')) AS published_channels");
+        $query = Db::name('products')->alias('p')->field("p.id,p.product_no,p.name,p.brand,p.category,p.status,p.created_at,COALESCE((SELECT MIN(s1.price) FROM product_skus s1 WHERE s1.product_id=p.id),0) AS min_price,COALESCE((SELECT MAX(s2.price) FROM product_skus s2 WHERE s2.product_id=p.id),0) AS max_price,(SELECT COUNT(*) FROM product_skus s3 WHERE s3.product_id=p.id) AS sku_count,COALESCE((SELECT SUM(s4.stock_quantity-s4.reserved_quantity) FROM product_skus s4 WHERE s4.product_id=p.id),0) AS available_stock,(SELECT COUNT(*) FROM storefront_product_listings l WHERE l.product_id=p.id AND l.status IN ('published','scheduled')) AS published_channels");
         if ($keyword) $query->whereLike('p.name|p.product_no|p.brand', '%' . addcslashes($keyword, '%_') . '%');
         return $this->result($query, $page, $size);
     }

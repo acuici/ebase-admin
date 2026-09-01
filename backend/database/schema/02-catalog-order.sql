@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `product_no` VARCHAR(32) NOT NULL,
   `name` VARCHAR(160) NOT NULL,
   `brand` VARCHAR(80) NULL,
+  `category` VARCHAR(120) NULL,
   `description` TEXT NULL,
   `status` VARCHAR(20) NOT NULL DEFAULT 'draft' COMMENT 'draft,active,archived',
   `created_at` DATETIME NULL,
