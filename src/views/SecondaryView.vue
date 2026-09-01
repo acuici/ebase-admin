@@ -2,19 +2,20 @@
 import { computed, ref, watch } from 'vue'
 import { ArrowLeft, Check, ChevronDown, Eye, MoreHorizontal, Pencil, Plus, Search, Trash2, X } from 'lucide-vue-next'
 import { secondaryConfigs } from '../data/secondaryConfigs'
+import { listOperationModule } from '../api/operations'
 import TableState from '../components/common/TableState.vue'
 
 const props=defineProps<{type:string}>(); const config=computed(()=>secondaryConfigs[props.type]); const query=ref(''); const activeStage=ref('全部')
 const localRows=ref<string[][]>([]); const drawer=ref(false); const mode=ref<'create'|'view'|'edit'>('view'); const form=ref<string[]>([]); const editingIndex=ref(-1); const deleteIndex=ref(-1); const toast=ref(''); const validationError=ref('')
-watch(config,value=>{const cached=localStorage.getItem(`ebase:crud:${props.type}`);localRows.value=cached?JSON.parse(cached):value.rows.map(row=>[...row]);query.value='';activeStage.value='全部'},{immediate:true})
+watch(config,value=>{localRows.value=value.rows.map(row=>[...row]);query.value='';activeStage.value='全部'},{immediate:true})
 const rows=computed(()=>{const k=query.value.trim().toLowerCase();return k?localRows.value.filter(r=>r.some(v=>v.toLowerCase().includes(k))):localRows.value})
 const drawerTitle=computed(()=>mode.value==='create'?`新增${config.value.title.replace('管理','')}`:mode.value==='edit'?'编辑记录':'记录详情')
 function notify(message:string){toast.value=message;setTimeout(()=>toast.value='',1800)}
-function persist(){localStorage.setItem(`ebase:crud:${props.type}`,JSON.stringify(localRows.value))}
+function persist(){}
 function openCreate(){mode.value='create';editingIndex.value=-1;validationError.value='';form.value=config.value.columns.map((_,i)=>i===0?`NEW-${Date.now().toString().slice(-6)}`:i===config.value.columns.length-1?'草稿':'');drawer.value=true}
 function openRow(row:string[],targetMode:'view'|'edit'){mode.value=targetMode;editingIndex.value=localRows.value.indexOf(row);validationError.value='';form.value=[...row];drawer.value=true}
 function startEdit(){mode.value='edit'}
-function save(){if(!form.value[0]?.trim()||!form.value[1]?.trim()){validationError.value=`${config.value.columns[0]}和${config.value.columns[1]}为必填项`;return}if(mode.value==='create'){localRows.value.unshift([...form.value]);notify('新增记录已保存')}else if(editingIndex.value>=0){localRows.value[editingIndex.value]=[...form.value];notify('修改已保存')}persist();drawer.value=false}
+function save(){notify('该功能正在切换真实 API');}
 function askDelete(row:string[]){deleteIndex.value=localRows.value.indexOf(row)}
 function confirmDelete(){if(deleteIndex.value>=0)localRows.value.splice(deleteIndex.value,1);persist();deleteIndex.value=-1;drawer.value=false;notify('记录已删除')}
 </script>

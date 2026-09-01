@@ -17,13 +17,13 @@ const features=[
 {id:'audit-logs',name:'操作日志',group:'数据与系统',description:'关键操作与安全审计',icon:FileClock,status:'高风险 4',usage:'今日 1,286 条'},
 ]
 const groups=['全部功能',...new Set(features.map(f=>f.group))]
-const favorites=ref<string[]>(JSON.parse(localStorage.getItem('ebase:feature-favorites')||'["refunds","report-builder"]'))
-const recent=ref<string[]>(JSON.parse(localStorage.getItem('ebase:feature-recent')||'["suppliers","refunds","audit-logs"]'))
+const favorites=ref<string[]>(['refunds','report-builder'])
+const recent=ref<string[]>(['suppliers','refunds','audit-logs'])
 const filtered=computed(()=>features.filter(f=>(activeGroup.value==='全部功能'||f.group===activeGroup.value)&&(`${f.name}${f.description}${f.group}`.toLowerCase().includes(query.value.trim().toLowerCase()))))
 const favoriteFeatures=computed(()=>favorites.value.map(id=>features.find(f=>f.id===id)).filter(Boolean))
 const recentFeatures=computed(()=>recent.value.map(id=>features.find(f=>f.id===id)).filter(Boolean).slice(0,4))
-function toggleFavorite(id:string){favorites.value=favorites.value.includes(id)?favorites.value.filter(v=>v!==id):[...favorites.value,id];localStorage.setItem('ebase:feature-favorites',JSON.stringify(favorites.value))}
-function openFeature(id:string){recent.value=[id,...recent.value.filter(v=>v!==id)].slice(0,6);localStorage.setItem('ebase:feature-recent',JSON.stringify(recent.value));router.push(`/features/${id}`)}
+function toggleFavorite(id:string){favorites.value=favorites.value.includes(id)?favorites.value.filter(v=>v!==id):[...favorites.value,id]}
+function openFeature(id:string){recent.value=[id,...recent.value.filter(v=>v!==id)].slice(0,6);router.push(`/features/${id}`)}
 </script>
 
 <template><section class="feature-hub enhanced-hub">
