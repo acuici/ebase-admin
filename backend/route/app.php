@@ -76,6 +76,25 @@ Route::group('api/v1/content', function () {
     Route::post('reviews/:id', 'ContentReviewController/review');
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
+// ---- 智能补货、商品质量与物流异常 ----
+Route::group('api/v1/restock', function () {
+    Route::get('suggestions', 'RestockController/suggestions');
+    Route::post('plans', 'RestockController/create');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+Route::get('api/v1/products/:productId/quality-report', 'ProductQualityController/report')->middleware(\app\common\middleware\AuthMiddleware::class);
+Route::group('api/v1/logistics/exceptions', function () {
+    Route::get('/', 'LogisticsExceptionController/index');
+    Route::post('detect', 'LogisticsExceptionController/detect');
+    Route::put('/:id', 'LogisticsExceptionController/update');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+
+// ---- 通知中心 ----
+Route::group('api/v1/notifications', function () {
+    Route::get('/', 'NotificationController/index');
+    Route::post('/:id/read', 'NotificationController/read');
+    Route::post('/read-all', 'NotificationController/readAll');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+
 // ---- 素材库 ----
 Route::group('api/v1/assets', function () {
     Route::get('/', 'AssetController/index');

@@ -27,6 +27,8 @@ final class CustomerController extends ApiController
         if (!$customer) throw BusinessException::notFound('消费者不存在');
         $customer['addresses'] = Db::name('customer_addresses')->where('customer_id', $id)->order('is_default', 'desc')->select();
         $customer['tags'] = Db::name('customer_tag_relations')->alias('r')->join('customer_tags t', 't.id=r.tag_id')->where('r.customer_id', $id)->column('t.name');
+        $customer['touchpoints'] = Db::name('customer_touchpoints')->where('customer_id', $id)->order('occurred_at', 'desc')->select();
+        $customer['order_stats'] = Db::name('orders')->where('customer_id', $id)->field('COUNT(*) AS order_count,COALESCE(SUM(total_amount),0) AS total_amount,MAX(created_at) AS last_order_at')->find();
         return $this->success($customer);
     }
 
