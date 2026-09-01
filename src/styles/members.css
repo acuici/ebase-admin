@@ -6,3 +6,21 @@
 
 /* The recovery form has no options row between its field and primary action. */
 .auth-form > label + .auth-submit { margin-top:20px; }
+
+.sidebar-account { position:relative; }
+.sidebar-account .sidebar-profile { cursor:pointer; }
+.sidebar-account .sidebar-profile:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+.sidebar-account .sidebar-profile.expanded { background:#f7f7fc; }
+.account-chevron { transition:transform 180ms cubic-bezier(.23,1,.32,1); }
+.sidebar-profile.expanded .account-chevron { transform:rotate(180deg); }
+.account-menu { position:absolute; right:0; bottom:62px; left:0; z-index:40; padding:7px; border:1px solid var(--border); border-radius:10px; background:#fff; box-shadow:0 12px 32px rgba(16,24,40,.12),0 2px 6px rgba(16,24,40,.06); transform-origin:50% 100%; }
+.account-menu button { width:100%; min-height:38px; padding:0 10px; display:flex; align-items:center; gap:10px; border-radius:7px; background:transparent; color:#596579; text-align:left; font-size:12px; font-weight:500; }
+.account-menu button.active { background:var(--primary-soft); color:var(--primary); font-weight:600; }
+.account-menu button:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+.account-menu-divider { height:1px; margin:6px 4px; display:block; background:var(--border); }
+.account-menu button.account-menu-logout { color:var(--danger); }
+.account-menu-enter-active { transition:opacity 180ms cubic-bezier(.23,1,.32,1),transform 180ms cubic-bezier(.23,1,.32,1); }
+.account-menu-leave-active { transition:opacity 120ms cubic-bezier(.23,1,.32,1),transform 120ms cubic-bezier(.23,1,.32,1); }
+.account-menu-enter-from,.account-menu-leave-to { opacity:0; transform:translateY(5px) scale(.97); }
+@media (hover:hover) and (pointer:fine) { .account-menu button:hover { background:#f7f8fa; color:var(--text); }.account-menu button.active:hover { background:var(--primary-soft); color:var(--primary); }.account-menu button.account-menu-logout:hover { background:#fff1f2; color:var(--danger); } }
+@media (prefers-reduced-motion:reduce) { .account-chevron,.account-menu-enter-active,.account-menu-leave-active { transition-duration:1ms; } }

@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  BarChart3, Bell, Box, ChevronDown, CircleHelp, ClipboardList, FileText,
+  BarChart3, Bell, Box, Check, ChevronDown, CircleHelp, ClipboardList, FileText,
   Gift, LayoutDashboard, Megaphone, Menu, PackageSearch, Search, Settings,
-  TicketPercent, Truck, Users, Warehouse, X, Grid3X3,
+  TicketPercent, Truck, Users, Warehouse, X, Grid3X3, LogOut, ShieldCheck, UserRound,
 } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
 const mobileOpen = ref(false)
+const accountOpen = ref(false)
+const accountArea = ref<HTMLElement | null>(null)
+const storeOpen = ref(false)
+const storeArea = ref<HTMLElement | null>(null)
+const stores = ['EBASE 全渠道','天猫旗舰店','京东自营店','抖音商城','品牌小程序']
+const selectedStore = ref(localStorage.getItem('ebase:selected-store') || stores[0])
 const navItems = [
   { to: '/', label: '控制台', icon: LayoutDashboard },
   { to: '/orders', label: '订单管理', icon: ClipboardList },
@@ -25,6 +31,16 @@ const navItems = [
   { to: '/features', label: '功能地图', icon: Grid3X3 },
 ]
 const pageTitle = computed(() => String(route.meta.title || '运营控制台'))
+function isNavActive(path:string){return path==='/'?route.path==='/' : route.path===path||route.path.startsWith(`${path}/`)}
+function openAccountPage(tab:string){accountOpen.value=false;router.push({path:'/member/profile',query:{tab}})}
+function logout(){accountOpen.value=false;localStorage.removeItem('ebase:session');router.push('/login')}
+function selectStore(store:string){selectedStore.value=store;storeOpen.value=false;localStorage.setItem('ebase:selected-store',store)}
+function toggleAccount(){storeOpen.value=false;accountOpen.value=!accountOpen.value}
+function toggleStore(){accountOpen.value=false;storeOpen.value=!storeOpen.value}
+function closeMenusOnOutside(event:MouseEvent){const target=event.target as Node;if(accountArea.value&&!accountArea.value.contains(target))accountOpen.value=false;if(storeArea.value&&!storeArea.value.contains(target))storeOpen.value=false}
+function closeMenusOnEscape(event:KeyboardEvent){if(event.key==='Escape'){accountOpen.value=false;storeOpen.value=false}}
+onMounted(()=>{document.addEventListener('click',closeMenusOnOutside);document.addEventListener('keydown',closeMenusOnEscape)})
+onBeforeUnmount(()=>{document.removeEventListener('click',closeMenusOnOutside);document.removeEventListener('keydown',closeMenusOnEscape)})
 </script>
 
 <template>
@@ -36,16 +52,27 @@ const pageTitle = computed(() => String(route.meta.title || '运营控制台'))
         <button class="mobile-close" aria-label="关闭导航" @click="mobileOpen = false"><X :size="18" /></button>
       </div>
       <nav class="nav-list">
-        <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="nav-item" @click="mobileOpen = false">
+        <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="nav-item" :class="{'is-active':isNavActive(item.to)}" @click="mobileOpen = false">
           <component :is="item.icon" :size="18" :stroke-width="1.8" />
           <span>{{ item.label }}</span>
         </RouterLink>
       </nav>
-      <button class="sidebar-profile" @click="router.push('/member/profile')">
-        <div class="avatar">林</div>
-        <div><strong>林知夏</strong><span>运营总监</span></div>
-        <ChevronDown :size="16" />
-      </button>
+      <div ref="accountArea" class="sidebar-account">
+        <Transition name="account-menu">
+          <div v-if="accountOpen" class="account-menu" role="menu" aria-label="成员账户菜单">
+            <button :class="{active:route.path==='/member/profile'&&(!route.query.tab||route.query.tab==='profile')}" role="menuitem" @click="openAccountPage('profile')"><UserRound :size="17"/><span>个人资料</span></button>
+            <button :class="{active:route.path==='/member/profile'&&route.query.tab==='security'}" role="menuitem" @click="openAccountPage('security')"><ShieldCheck :size="17"/><span>账号安全</span></button>
+            <button :class="{active:route.path==='/member/profile'&&route.query.tab==='notifications'}" role="menuitem" @click="openAccountPage('notifications')"><Bell :size="17"/><span>通知偏好</span></button>
+            <span class="account-menu-divider"></span>
+            <button class="account-menu-logout" role="menuitem" @click="logout"><LogOut :size="17"/><span>退出当前账号</span></button>
+          </div>
+        </Transition>
+        <button class="sidebar-profile" :class="{expanded:accountOpen}" aria-haspopup="menu" :aria-expanded="accountOpen" @click.stop="toggleAccount">
+          <div class="avatar">林</div>
+          <div><strong>林知夏</strong><span>运营总监</span></div>
+          <ChevronDown class="account-chevron" :size="16" />
+        </button>
+      </div>
     </aside>
 
     <div v-if="mobileOpen" class="sidebar-scrim" @click="mobileOpen = false"></div>
@@ -54,7 +81,15 @@ const pageTitle = computed(() => String(route.meta.title || '运营控制台'))
       <header class="topbar">
         <div class="topbar-left">
           <button class="mobile-menu" aria-label="打开导航" @click="mobileOpen = true"><Menu :size="20" /></button>
-          <button class="store-switcher"><Box :size="17" /><span>EBASE 全渠道</span><ChevronDown :size="15" /></button>
+          <div ref="storeArea" class="store-switcher-wrap">
+            <button class="store-switcher" :class="{expanded:storeOpen}" aria-haspopup="menu" :aria-expanded="storeOpen" @click.stop="toggleStore"><Box :size="17" /><span>{{selectedStore}}</span><ChevronDown class="store-chevron" :size="15" /></button>
+            <Transition name="store-menu">
+              <div v-if="storeOpen" class="store-menu" role="menu" aria-label="切换店铺与渠道">
+                <div class="store-menu-heading"><strong>切换经营视图</strong><span>当前页面数据将按所选渠道展示</span></div>
+                <button v-for="store in stores" :key="store" :class="{active:selectedStore===store}" role="menuitemradio" :aria-checked="selectedStore===store" @click="selectStore(store)"><span class="store-icon"><Box :size="15"/></span><span>{{store}}</span><Check v-if="selectedStore===store" :size="15"/></button>
+              </div>
+            </Transition>
+          </div>
           <label class="global-search">
             <Search :size="17" />
             <input placeholder="搜索订单、商品或用户..." />
