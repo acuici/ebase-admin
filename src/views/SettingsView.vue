@@ -5,8 +5,9 @@ import { Bell, Building2, Check, ChevronRight, CreditCard, FileClock, LockKeyhol
 import { useToast } from '../composables/useToast'
 import { ApiError } from '../api/client'
 import { getSystemSettings, saveSystemSettings } from '../api/settings'
+import { useSystemBranding } from '../composables/useSystemBranding'
 
-const router=useRouter(); const active=ref('company'); const saved=ref(false); const {success,error:showError}=useToast()
+const router=useRouter(); const active=ref('company'); const saved=ref(false); const {success,error:showError}=useToast(); const {setSystemName}=useSystemBranding()
 const sections=[{id:'company',label:'企业信息',icon:Building2},{id:'members',label:'成员与角色',icon:Users},{id:'channels',label:'店铺与渠道',icon:Store},{id:'warehouse',label:'仓库配置',icon:Warehouse},{id:'payment',label:'支付配置',icon:CreditCard},{id:'notifications',label:'消息通知',icon:Bell},{id:'security',label:'安全设置',icon:LockKeyhole},{id:'logs',label:'操作日志',icon:FileClock}]
 const configs=reactive<Record<string,{title:string;description:string;groups:{title:string;description:string;fields:{label:string;value:string;type?:string;hint?:string}[]}[]}>>({
 company:{title:'企业信息',description:'维护企业主体、品牌信息和默认经营配置。',groups:[{title:'企业资料',description:'用于后台展示、合同与业务单据。',fields:[{label:'企业名称',value:'上海清透商业有限公司'},{label:'企业简称',value:'EBASE'},{label:'统一社会信用代码',value:'91310000MA1FL8XK26'},{label:'所属行业',value:'零售 / 电商',type:'select'},{label:'企业地址',value:'上海市浦东新区世纪大道 100 号'},{label:'客服热线',value:'400-820-2026'}]},{title:'品牌与区域',description:'设置系统品牌和默认时区。',fields:[{label:'系统名称',value:'EBASE 商业运营后台'},{label:'默认语言',value:'简体中文',type:'select'},{label:'默认时区',value:'Asia/Shanghai (UTC+8)',type:'select'},{label:'默认货币',value:'人民币 CNY',type:'select'}]}]},
@@ -24,7 +25,7 @@ const fieldKeyMap:Record<string,string>={
 }
 const loading=ref(false); const loadError=ref(''); const saving=ref(false)
 async function loadSettings(){if(active.value==='logs')return;loading.value=true;loadError.value='';try{const result=await getSystemSettings(active.value);configs[active.value].groups.forEach(group=>group.fields.forEach(field=>{const key=fieldKeyMap[field.label];if(key&&result.settings[key]!==undefined)field.value=String(result.settings[key])}))}catch(e){loadError.value=e instanceof ApiError?e.body.message:'设置加载失败'}finally{loading.value=false}}
-async function save(){if(active.value==='logs'){success('操作日志为只读信息','请使用日志筛选查看记录');return}saving.value=true;try{const settings:Record<string,unknown>={};configs[active.value].groups.forEach(group=>group.fields.forEach(field=>{const key=fieldKeyMap[field.label];if(key)settings[key]=field.value}));await saveSystemSettings(active.value,settings);saved.value=true;success('系统设置已保存',current.value.title);setTimeout(()=>saved.value=false,2000)}catch(e){showError('系统设置保存失败',e instanceof ApiError?e.body.message:'请稍后重试')}finally{saving.value=false}}
+async function save(){if(active.value==='logs'){success('操作日志为只读信息','请使用日志筛选查看记录');return}saving.value=true;try{const settings:Record<string,unknown>={};configs[active.value].groups.forEach(group=>group.fields.forEach(field=>{const key=fieldKeyMap[field.label];if(key)settings[key]=field.value}));await saveSystemSettings(active.value,settings);if(active.value==='company'&&settings.system_name)setSystemName(String(settings.system_name));document.title=String(settings.system_name||document.title);saved.value=true;success('系统设置已保存',current.value.title);setTimeout(()=>saved.value=false,2000)}catch(e){showError('系统设置保存失败',e instanceof ApiError?e.body.message:'请稍后重试')}finally{saving.value=false}}
 watch(active,()=>{void loadSettings()});onMounted(()=>{void loadSettings()})
 </script>
 

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../../composables/useAuth'
 import { useToast } from '../../composables/useToast'
 import { useTopbarLayer } from '../../composables/useTopbarLayer'
+import { useSystemBranding } from '../../composables/useSystemBranding'
 import GlobalSearch from './GlobalSearch.vue'
 import HelpMenu from './HelpMenu.vue'
 import NotificationCenter from './NotificationCenter.vue'
@@ -16,6 +17,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const { member, avatarPreview, hydrate, logout: signOut } = useAuth()
+const { systemName, loadBranding } = useSystemBranding()
 const { success } = useToast()
 const mobileOpen = ref(false)
 const {active:activeLayer,toggle:toggleLayer,close:closeLayer}=useTopbarLayer()
@@ -51,7 +53,8 @@ function toggleStore(){toggleLayer('store')}
 function closeMenusOnOutside(event:MouseEvent){const target=event.target as Node;if(accountOpen.value&&accountArea.value&&!accountArea.value.contains(target))closeLayer('account');if(storeOpen.value&&storeArea.value&&!storeArea.value.contains(target))closeLayer('store')}
 function closeMenusOnEscape(event:KeyboardEvent){if(event.key==='Escape')closeLayer()}
 onMounted(async()=>{
-  await hydrate(true)
+  await Promise.all([hydrate(true), loadBranding()])
+  document.title = systemName.value
   document.addEventListener('click',closeMenusOnOutside)
   document.addEventListener('keydown',closeMenusOnEscape)
 })
