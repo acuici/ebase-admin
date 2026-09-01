@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowRight, ChevronDown, Download, Plus, RotateCcw, Search } from 'lucide-vue-next'
+import { ArrowRight, Download, Plus, RotateCcw, Search } from 'lucide-vue-next'
 import { useToast } from '../composables/useToast'
 import TableState from '../components/common/TableState.vue'
 import DateRangePicker, { type DateRangeValue } from '../components/common/DateRangePicker.vue'
+import ToolbarSelect from '../components/common/ToolbarSelect.vue'
 
 const router = useRouter()
 const { info, success } = useToast()
@@ -12,9 +13,8 @@ const range = ref<'14d' | '30d'>('14d')
 const dashboardDates=ref<DateRangeValue>({start:'2026-08-31',end:'2026-09-02',preset:3})
 const orderQuery = ref('')
 const orderStatus = ref('全部状态')
-const statusOpen = ref(false)
-const statusMenu = ref<HTMLElement|null>(null)
 const refreshing = ref(false)
+const orderStatusOptions=['全部状态','待付款','待发货','运输中','已发货','已完成','售后中'].map(value=>({label:value,value}))
 const points = [42, 48, 45, 56, 53, 64, 60, 72, 66, 78, 73, 86, 79, 91]
 const previous = [38, 43, 42, 48, 49, 54, 51, 59, 57, 64, 62, 70, 68, 74]
 const points30 = [34,38,41,39,45,43,48,52,49,55,58,54,61,59,64,67,63,70,68,74,71,77,75,81,78,84,82,87,85,91]
@@ -76,11 +76,6 @@ function refreshStructure(){if(refreshing.value)return;refreshing.value=true;win
 function requestRestock(sku:string){info('已打开补货流程',`将为 ${sku} 创建补货计划。`);router.push('/inventory/restock')}
 function openOrder(orderNo:string){info('正在打开订单管理',`请在订单列表中确认 ${orderNo}`);router.push({path:'/orders',query:{order_no:orderNo.replace(/^#/,'')}})}
 function clearOrderFilters(){orderQuery.value='';orderStatus.value='全部状态'}
-function selectOrderStatus(status:string){orderStatus.value=status;statusOpen.value=false}
-function closeStatusMenu(event:MouseEvent){if(statusOpen.value&&statusMenu.value&&!statusMenu.value.contains(event.target as Node))statusOpen.value=false}
-function closeStatusOnEscape(event:KeyboardEvent){if(event.key==='Escape')statusOpen.value=false}
-onMounted(()=>{document.addEventListener('click',closeStatusMenu);document.addEventListener('keydown',closeStatusOnEscape)})
-onBeforeUnmount(()=>{document.removeEventListener('click',closeStatusMenu);document.removeEventListener('keydown',closeStatusOnEscape)})
 </script>
 
 <template>
@@ -152,7 +147,7 @@ onBeforeUnmount(()=>{document.removeEventListener('click',closeStatusMenu);docum
     <article class="surface orders-card">
       <header class="orders-toolbar">
         <div><h2>最新订单</h2><p>今天新增 1,846 笔订单</p></div>
-        <div><label class="table-search"><Search :size="15" /><input v-model="orderQuery" placeholder="搜索订单" /></label><div ref="statusMenu" class="dashboard-status-menu"><button class="button secondary dashboard-status-trigger" :class="{expanded:statusOpen}" aria-haspopup="listbox" :aria-expanded="statusOpen" @click="statusOpen=!statusOpen"><span>{{orderStatus}}</span><ChevronDown :size="14" /></button><Transition name="status-menu"><div v-if="statusOpen" class="dashboard-status-options" role="listbox" aria-label="订单状态"><button v-for="status in ['全部状态','待付款','待发货','运输中','已发货','已完成','售后中']" :key="status" role="option" :aria-selected="orderStatus===status" :class="{active:orderStatus===status}" @click="selectOrderStatus(status)">{{status}}</button></div></Transition></div><button class="text-button" @click="router.push('/orders')">查看全部订单 <ArrowRight :size="15" /></button></div>
+        <div><label class="table-search"><Search :size="15" /><input v-model="orderQuery" placeholder="搜索订单" /></label><ToolbarSelect v-model="orderStatus" :options="orderStatusOptions" aria-label="订单状态"/><button class="text-button" @click="router.push('/orders')">查看全部订单 <ArrowRight :size="15" /></button></div>
       </header>
       <TableState v-if="!filteredOrders.length" state="empty" filtered title="没有找到订单" description="调整订单号、客户、商品关键词或状态筛选后再试。"><template #action><button class="button secondary" @click="clearOrderFilters">清除筛选</button></template></TableState><div v-else class="table-scroll"><table><thead><tr><th>订单号</th><th>客户</th><th>渠道 / 店铺</th><th>商品</th><th class="align-right">金额</th><th>支付方式</th><th>状态</th><th>下单时间</th></tr></thead><tbody><tr v-for="order in filteredOrders" :key="order[0]" tabindex="0" @click="openOrder(order[0])" @keydown.enter="openOrder(order[0])"><td class="mono order-id">{{ order[0] }}</td><td>{{ order[1] }}</td><td>{{ order[2] }}</td><td class="product-name">{{ order[3] }}</td><td class="mono align-right">{{ order[4] }}</td><td>{{ order[5] }}</td><td><span class="status-tag" :data-status="order[6]">{{ order[6] }}</span></td><td class="muted">{{ order[7] }}</td></tr></tbody></table></div>
     </article>
