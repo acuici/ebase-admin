@@ -33,6 +33,7 @@ Route::group('api/v1/auth', function () {
 // ---- 成员（需登录） ----
 Route::group('api/v1/member', function () {
     Route::get('profile', 'MemberController/profile');
+    Route::patch('profile', 'MemberController/updateProfile');
     Route::get('sessions', 'MemberController/sessions');
     Route::delete('sessions/:id', 'MemberController/revokeSession');
 })->middleware(\app\common\middleware\AuthMiddleware::class);

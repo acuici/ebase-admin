@@ -8,6 +8,11 @@ export interface MemberProfile {
   avatar?: string | null
   status: number
   permissions: string[]
+  phone?: string | null
+  job_title?: string | null
+  department?: string | null
+  locale?: 'zh-CN' | 'en-US'
+  notification_preferences?: Record<string, boolean> | null
 }
 
 interface LoginResponse {
@@ -65,6 +70,15 @@ export function useAuth() {
     }
   }
 
+  async function updateProfile(profile: Pick<MemberProfile, 'name' | 'phone' | 'job_title' | 'department' | 'locale' | 'notification_preferences'>): Promise<MemberProfile> {
+    const updated = await apiRequest<MemberProfile>('/member/profile', {
+      method: 'PATCH',
+      body: profile,
+    })
+    member.value = updated
+    return updated
+  }
+
   async function logout(): Promise<void> {
     try {
       await apiRequest('/auth/logout', { method: 'POST' })
@@ -83,6 +97,7 @@ export function useAuth() {
     isAuthenticated,
     login,
     hydrate,
+    updateProfile,
     logout,
   }
 }

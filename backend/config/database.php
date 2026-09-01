@@ -34,7 +34,9 @@ return [
             // 端口
             'hostport'        => env('DB_PORT', '3306'),
             // 数据库连接参数
-            'params'          => [],
+            'params'          => [
+                \Pdo\Mysql::ATTR_INIT_COMMAND => 'SET NAMES utf8mb4',
+            ],
             // 数据库编码
             'charset'         => env('DB_CHARSET', 'utf8mb4'),
             // 数据库表前缀
