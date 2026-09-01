@@ -10,7 +10,7 @@ export interface MemberSession {
 
 export interface AuthLog {
   id: string
-  event_type: 'login_success' | 'login_failed' | 'logout' | 'password_reset' | 'session_revoked'
+  event_type: 'login_success' | 'login_failed' | 'logout' | 'password_reset' | 'session_revoked' | 'other_sessions_revoked'
   ip?: string | null
   user_agent?: string | null
   created_at: string
@@ -27,6 +27,10 @@ export function listSessions() {
 
 export function listAuthLogs() {
   return apiRequest<Paginated<AuthLog>>('/member/auth-logs?page=1&page_size=20')
+}
+
+export function revokeOtherSessions() {
+  return apiRequest<{ revoked_count: number }>('/member/sessions/others', { method: 'DELETE' })
 }
 
 export function revokeSession(sessionId: string) {

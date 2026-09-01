@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Bell, Check, KeyRound, LogOut, Save, ShieldCheck, UserRound } from 'lucide-vue-next'
-import { listAuthLogs, listSessions, revokeSession, type AuthLog, type MemberSession } from '../api/security'
+import { Activity, Bell, Check, Clock3, KeyRound, Laptop, LogOut, MapPin, RefreshCw, Save, ShieldCheck, Smartphone, UserRound } from 'lucide-vue-next'
+import { listAuthLogs, listSessions, revokeOtherSessions, revokeSession, type AuthLog, type MemberSession } from '../api/security'
 import { ApiError } from '../api/client'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
@@ -81,6 +81,17 @@ async function revokeDevice(sessionId: string): Promise<void> {
   }
 }
 
+async function revokeOtherDevices(): Promise<void> {
+  if (!confirm('确认撤销除当前设备外的全部会话？其他设备将需要重新登录。')) return
+  try {
+    const result = await revokeOtherSessions()
+    success('其他设备已撤销', `共撤销 ${result.revoked_count} 个会话`)
+    await loadSecurity()
+  } catch (exception) {
+    showError('撤销失败', exception instanceof ApiError ? exception.body.message : '请稍后重试')
+  }
+}
+
 function authEventLabel(event: AuthLog['event_type']): string {
   return {
     login_success: '登录成功',
@@ -88,6 +99,7 @@ function authEventLabel(event: AuthLog['event_type']): string {
     logout: '主动登出',
     password_reset: '密码重置',
     session_revoked: '会话已撤销',
+    other_sessions_revoked: '其他设备会话已撤销',
   }[event]
 }
 
@@ -158,26 +170,33 @@ onMounted(async () => {
         </template>
 
         <template v-else-if="tab === 'security'">
-          <article class="surface editor-section">
-            <header><span><KeyRound :size="18" /></span><div><h2>登录设备</h2><p>设备会话来自真实后台记录，可撤销非当前设备。</p></div></header>
-            <p v-if="securityLoading">正在加载登录设备与安全日志...</p>
-            <div v-else class="security-cards">
+          <section class="security-overview" aria-label="账号安全摘要">
+            <div><span><ShieldCheck :size="17" /></span><p>账号状态<b>保护正常</b></p></div>
+            <div><span><Laptop :size="17" /></span><p>活动设备<b>{{ sessions.length }} 台</b></p></div>
+            <div><span><Activity :size="17" /></span><p>近期安全事件<b>{{ authLogs.length }} 条</b></p></div>
+          </section>
+          <article class="surface editor-section security-panel">
+            <header><span><KeyRound :size="18" /></span><div><h2>登录设备</h2><p>查看已建立的设备会话，并撤销不再使用的设备。</p></div><div class="security-header-actions"><button class="security-refresh" :disabled="securityLoading" aria-label="重新加载安全信息" @click="loadSecurity"><RefreshCw :size="15" :class="{ spinning: securityLoading }" />重新检查</button><button class="security-refresh danger-action" :disabled="securityLoading || sessions.length < 2" @click="revokeOtherDevices">撤销其他设备</button></div></header>
+            <div v-if="securityLoading" class="security-skeleton" aria-label="正在加载登录设备"><i></i><i></i></div>
+            <div v-else-if="sessions.length" class="device-list">
               <div v-for="session in sessions" :key="session.session_id">
-                <span><ShieldCheck :size="19" /></span>
-                <div><b>{{ session.device || '未知设备' }}</b><small>{{ session.ip || '未知 IP' }} · 最近活动 {{ session.last_seen || session.created_at }}</small></div>
-                <button @click="revokeDevice(session.session_id)">撤销</button>
+                <span class="device-icon"><Smartphone v-if="/mobile|iphone|android/i.test(session.device || '')" :size="18" /><Laptop v-else :size="18" /></span>
+                <div><b>{{ session.device || '未知设备' }}</b><small><MapPin :size="12" />{{ session.ip || '未知 IP' }}<Clock3 :size="12" />最近活动 {{ session.last_seen || session.created_at }}</small></div>
+                <button @click="revokeDevice(session.session_id)">撤销会话</button>
               </div>
-              <p v-if="!sessions.length">没有活动登录设备。</p>
+            </div>
+            <div v-else class="security-empty compact-empty">
+              <span><Laptop :size="22" /></span><div><h3>没有其他活动设备</h3><p>新设备登录后会显示在这里，你可以随时撤销对应会话。</p></div><button class="button secondary" @click="loadSecurity"><RefreshCw :size="14" />重新检查</button>
             </div>
           </article>
-          <article class="surface editor-section">
-            <header><span><ShieldCheck :size="18" /></span><div><h2>登录与安全日志</h2><p>记录登录成功、失败、登出、密码重置与会话撤销。</p></div></header>
-            <div class="security-cards">
-              <div v-for="log in authLogs" :key="log.id">
-                <span><KeyRound :size="19" /></span>
-                <div><b>{{ authEventLabel(log.event_type) }}</b><small>{{ log.ip || '未知 IP' }} · {{ log.created_at }}</small></div>
-              </div>
-              <p v-if="!securityLoading && !authLogs.length">暂无安全日志；下一次登录后会自动生成。</p>
+          <article class="surface editor-section security-panel">
+            <header><span><ShieldCheck :size="18" /></span><div><h2>登录与安全日志</h2><p>追踪登录、登出、密码重置和会话撤销。</p></div></header>
+            <div v-if="securityLoading" class="security-skeleton log-skeleton" aria-label="正在加载安全日志"><i></i><i></i><i></i></div>
+            <div v-else-if="authLogs.length" class="auth-log-list">
+              <div v-for="log in authLogs" :key="log.id"><span :data-event="log.event_type"><KeyRound :size="15" /></span><div><b>{{ authEventLabel(log.event_type) }}</b><small>{{ log.ip || '未知 IP' }}</small></div><time>{{ log.created_at }}</time></div>
+            </div>
+            <div v-else class="security-empty compact-empty log-empty">
+              <span><ShieldCheck :size="22" /></span><div><h3>暂无安全事件</h3><p>登录、密码修改或设备撤销后，相关记录会自动出现在这里。</p></div>
             </div>
           </article>
         </template>

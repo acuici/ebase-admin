@@ -95,6 +95,38 @@ final class MemberController extends ApiController
         return $this->paginated($items, $page, $pageSize, $total);
     }
 
+    public function revokeOtherSessions(Request $request): Response
+    {
+        $member = $this->requireMember();
+        $currentSessionId = (string) $request->sessionId;
+        $sessions = Db::name('member_sessions')
+            ->where('member_id', $member->id)
+            ->whereNull('revoked_at')
+            ->where('session_id', '<>', $currentSessionId)
+            ->column('session_id');
+
+        if ($sessions) {
+            Db::name('member_sessions')
+                ->whereIn('session_id', $sessions)
+                ->update(['revoked_at' => date('Y-m-d H:i:s')]);
+
+            $jwt = new JwtService();
+            foreach ($sessions as $sessionId) {
+                $jwt->revokeRefreshToken($sessionId);
+            }
+        }
+
+        (new MemberAuthAuditService())->record(
+            (int) $member->id,
+            $member->email,
+            'other_sessions_revoked',
+            $request,
+            ['count' => count($sessions)],
+        );
+
+        return $this->success(['revoked_count' => count($sessions)], '其他设备会话已撤销');
+    }
+
     public function revokeSession(Request $request, string $id): Response
     {
         $member = $this->requireMember();
