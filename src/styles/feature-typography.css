@@ -1,0 +1,42 @@
+/*
+ * 功能地图排版收口
+ * 中文 UI 与表单控件统一继承全局字体；Manrope 仅留给明确的纯西文展示。
+ */
+.feature-hub,
+.secondary-page,
+.crud-drawer,
+.confirm-dialog,
+.feature-hub button,
+.feature-hub input,
+.secondary-page button,
+.secondary-page input,
+.secondary-page select,
+.secondary-page textarea,
+.crud-drawer button,
+.crud-drawer input,
+.crud-drawer select,
+.crud-drawer textarea,
+.confirm-dialog button {
+  font-family: inherit;
+}
+
+.feature-card h2,
+.hub-section h2,
+.stage-card h2,
+.crud-drawer > header h2,
+.confirm-dialog h2 {
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.hub-overview strong {
+  font-family: inherit;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.crud-form input,
+.crud-form select,
+.crud-form textarea {
+  font-family: inherit;
+}
