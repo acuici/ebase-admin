@@ -55,6 +55,13 @@ Route::group('api/v1/admin', function () {
     Route::delete('roles/:id', 'RoleController/delete')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.role.delete');
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
+// ---- 系统设置 ----
+Route::group('api/v1/system-settings', function () {
+    Route::get('/:group', 'SystemSettingsController/index');
+    Route::put('/:group', 'SystemSettingsController/save');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+Route::get('api/v1/operation-logs', 'SystemSettingsController/operationLogs')->middleware(\app\common\middleware\AuthMiddleware::class);
+
 // ---- 消费者与营销 ----
 Route::group('api/v1/customers', function () {
     Route::get('/', 'CustomerController/index');
