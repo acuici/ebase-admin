@@ -44,6 +44,8 @@ async function save(): Promise<void> {
   saving.value = true
   try {
     await updateProfile({ ...form })
+    await hydrate(true)
+    syncForm()
     success('个人设置已保存', '资料已同步到成员账户')
   } catch (exception) {
     showError('保存失败', exception instanceof ApiError ? exception.body.message : '请稍后重试')

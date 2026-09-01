@@ -1,5 +1,5 @@
 import { computed, readonly, ref } from 'vue'
-import { apiRequest } from '../api/client'
+import { ApiError, apiRequest } from '../api/client'
 
 export interface MemberProfile {
   id: string
@@ -51,22 +51,31 @@ export function useAuth() {
     hydrated.value = false
   }
 
-  async function hydrate(): Promise<boolean> {
+  async function hydrate(force = false): Promise<boolean> {
     if (!isAuthenticated.value) {
       member.value = null
       hydrated.value = true
       return false
     }
 
+    if (!force && member.value) {
+      hydrated.value = true
+      return true
+    }
+
     try {
       member.value = await apiRequest<MemberProfile>('/member/profile')
       hydrated.value = true
       return true
-    } catch {
-      clearTokens()
-      member.value = null
+    } catch (exception) {
+      // Do not erase an already-known member on transient network/server errors.
+      // Only an explicit authentication failure invalidates the local session.
+      if (exception instanceof ApiError && exception.status === 401) {
+        clearTokens()
+        member.value = null
+      }
       hydrated.value = true
-      return false
+      return Boolean(member.value)
     }
   }
 

@@ -11,7 +11,7 @@ import {
 
 const route = useRoute()
 const router = useRouter()
-const { member, logout: signOut } = useAuth()
+const { member, hydrate, logout: signOut } = useAuth()
 const { success } = useToast()
 const mobileOpen = ref(false)
 const accountOpen = ref(false)
@@ -44,7 +44,11 @@ function toggleAccount(){storeOpen.value=false;accountOpen.value=!accountOpen.va
 function toggleStore(){accountOpen.value=false;storeOpen.value=!storeOpen.value}
 function closeMenusOnOutside(event:MouseEvent){const target=event.target as Node;if(accountArea.value&&!accountArea.value.contains(target))accountOpen.value=false;if(storeArea.value&&!storeArea.value.contains(target))storeOpen.value=false}
 function closeMenusOnEscape(event:KeyboardEvent){if(event.key==='Escape'){accountOpen.value=false;storeOpen.value=false}}
-onMounted(()=>{document.addEventListener('click',closeMenusOnOutside);document.addEventListener('keydown',closeMenusOnEscape)})
+onMounted(async()=>{
+  await hydrate(true)
+  document.addEventListener('click',closeMenusOnOutside)
+  document.addEventListener('keydown',closeMenusOnEscape)
+})
 onBeforeUnmount(()=>{document.removeEventListener('click',closeMenusOnOutside);document.removeEventListener('keydown',closeMenusOnEscape)})
 </script>
 
