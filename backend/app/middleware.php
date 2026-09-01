@@ -1,11 +1,9 @@
 <?php
-// 全局中间件定义文件
 
+use app\common\middleware\CorsMiddleware;
 use app\common\middleware\RequestIdMiddleware;
 
 return [
-    // 全局请求 ID
+    CorsMiddleware::class,
     RequestIdMiddleware::class,
-    // 多语言加载
-    // \think\middleware\LoadLangPack::class,
 ];

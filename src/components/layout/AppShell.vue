@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuth } from '../../composables/useAuth'
 import { useToast } from '../../composables/useToast'
 import {
   BarChart3, Bell, Box, Check, ChevronDown, CircleHelp, ClipboardList, FileText,
@@ -10,7 +11,8 @@ import {
 
 const route = useRoute()
 const router = useRouter()
-const {success}=useToast()
+const { member, logout: signOut } = useAuth()
+const { success } = useToast()
 const mobileOpen = ref(false)
 const accountOpen = ref(false)
 const accountArea = ref<HTMLElement | null>(null)
@@ -36,7 +38,7 @@ const navItems = [
 const pageTitle = computed(() => String(route.meta.title || '运营控制台'))
 function isNavActive(path:string){return path==='/'?route.path==='/' : route.path===path||route.path.startsWith(`${path}/`)}
 function openAccountPage(tab:string){accountOpen.value=false;router.push({path:'/member/profile',query:{tab}})}
-function logout(){accountOpen.value=false;localStorage.removeItem('ebase:session');router.push('/login')}
+async function logout(){accountOpen.value=false;await signOut();router.push('/login')}
 function selectStore(store:string){selectedStore.value=store;storeOpen.value=false;localStorage.setItem('ebase:selected-store',store);success('经营视图已切换',`当前显示：${store}`)}
 function toggleAccount(){storeOpen.value=false;accountOpen.value=!accountOpen.value}
 function toggleStore(){accountOpen.value=false;storeOpen.value=!storeOpen.value}
@@ -71,8 +73,8 @@ onBeforeUnmount(()=>{document.removeEventListener('click',closeMenusOnOutside);d
           </div>
         </Transition>
         <button class="sidebar-profile" :class="{expanded:accountOpen}" aria-haspopup="menu" :aria-expanded="accountOpen" @click.stop="toggleAccount">
-          <div class="avatar">林</div>
-          <div><strong>林知夏</strong><span>运营总监</span></div>
+          <div class="avatar">{{ member?.name?.[0] || '用' }}</div>
+          <div><strong>{{ member?.name || '加载中' }}</strong><span>{{ member?.email || '成员账号' }}</span></div>
           <ChevronDown class="account-chevron" :size="16" />
         </button>
       </div>
@@ -103,7 +105,7 @@ onBeforeUnmount(()=>{document.removeEventListener('click',closeMenusOnOutside);d
           <button aria-label="帮助"><CircleHelp :size="19" /></button>
           <button class="notification" aria-label="通知"><Bell :size="19" /><i></i></button>
           <span class="topbar-divider"></span>
-          <button class="topbar-avatar" aria-label="打开个人资料" @click="router.push('/member/profile')">林</button>
+          <button class="topbar-avatar" aria-label="打开个人资料" @click="router.push('/member/profile')">{{ member?.name?.[0] || '用' }}</button>
         </div>
       </header>
       <main class="page-canvas" :aria-label="pageTitle">

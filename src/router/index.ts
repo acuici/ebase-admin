@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuth } from '../composables/useAuth'
 import DashboardView from '../views/DashboardView.vue'
 import ModuleView from '../views/ModuleView.vue'
 import WorkflowView from '../views/WorkflowView.vue'
@@ -25,7 +26,7 @@ const modules = [
   ['reports', '数据报表'],
 ] as const
 
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', name: 'login', component: LoginView, meta: { title: '成员登录', layout: 'auth' } },
@@ -61,3 +62,18 @@ export default createRouter({
     { path: '/settings/roles/:id', name: 'role-edit', component: WorkflowView, props: { type: 'settings' }, meta: { title: '角色权限编辑' } },
   ],
 })
+
+router.beforeEach(async (to) => {
+  const isPublic = to.meta.layout === 'auth'
+  const auth = useAuth()
+
+  if (isPublic) {
+    if (auth.isAuthenticated.value && await auth.hydrate()) return '/'
+    return true
+  }
+
+  if (await auth.hydrate()) return true
+  return { path: '/login', query: { redirect: to.fullPath } }
+})
+
+export default router

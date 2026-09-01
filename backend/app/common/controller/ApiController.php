@@ -20,14 +20,6 @@ abstract class ApiController extends BaseController
     public function __construct(App $app)
     {
         parent::__construct($app);
-
-        // 统一跨域处理（前后端分离）
-        $this->request->header('Origin')
-            && $this->request->header('Access-Control-Allow-Origin');
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET,POST,PUT,PATCH,DELETE,OPTIONS');
-        header('Access-Control-Allow-Headers: Authorization,Content-Type,X-Request-Id');
-        header('Access-Control-Max-Age: 86400');
     }
 
     /**
