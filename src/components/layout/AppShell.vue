@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../../composables/useAuth'
 import { useToast } from '../../composables/useToast'
+import { useTopbarLayer } from '../../composables/useTopbarLayer'
 import GlobalSearch from './GlobalSearch.vue'
 import HelpMenu from './HelpMenu.vue'
 import NotificationCenter from './NotificationCenter.vue'
@@ -17,9 +18,10 @@ const router = useRouter()
 const { member, avatarPreview, hydrate, logout: signOut } = useAuth()
 const { success } = useToast()
 const mobileOpen = ref(false)
-const accountOpen = ref(false)
+const {active:activeLayer,toggle:toggleLayer,close:closeLayer}=useTopbarLayer()
+const accountOpen = computed(()=>activeLayer.value==='account')
 const accountArea = ref<HTMLElement | null>(null)
-const storeOpen = ref(false)
+const storeOpen = computed(()=>activeLayer.value==='store')
 const storeArea = ref<HTMLElement | null>(null)
 const stores = ['EBASE 全渠道','天猫旗舰店','京东自营店','抖音商城','品牌小程序']
 const selectedStore = ref(localStorage.getItem('ebase:selected-store') || stores[0])
@@ -41,13 +43,13 @@ const navItems = [
 const pageTitle = computed(() => String(route.meta.title || '运营控制台'))
 const avatarSource = computed(()=>avatarPreview.value||member.value?.avatar||'')
 function isNavActive(path:string){return path==='/'?route.path==='/' : route.path===path||route.path.startsWith(`${path}/`)}
-function openAccountPage(tab:string){accountOpen.value=false;router.push({path:'/member/profile',query:{tab}})}
-async function logout(){accountOpen.value=false;await signOut();router.push('/login')}
-function selectStore(store:string){selectedStore.value=store;storeOpen.value=false;localStorage.setItem('ebase:selected-store',store);success('经营视图已切换',`当前显示：${store}`)}
-function toggleAccount(){storeOpen.value=false;accountOpen.value=!accountOpen.value}
-function toggleStore(){accountOpen.value=false;storeOpen.value=!storeOpen.value}
-function closeMenusOnOutside(event:MouseEvent){const target=event.target as Node;if(accountArea.value&&!accountArea.value.contains(target))accountOpen.value=false;if(storeArea.value&&!storeArea.value.contains(target))storeOpen.value=false}
-function closeMenusOnEscape(event:KeyboardEvent){if(event.key==='Escape'){accountOpen.value=false;storeOpen.value=false}}
+function openAccountPage(tab:string){closeLayer('account');router.push({path:'/member/profile',query:{tab}})}
+async function logout(){closeLayer('account');await signOut();router.push('/login')}
+function selectStore(store:string){selectedStore.value=store;closeLayer('store');localStorage.setItem('ebase:selected-store',store);success('经营视图已切换',`当前显示：${store}`)}
+function toggleAccount(){toggleLayer('account')}
+function toggleStore(){toggleLayer('store')}
+function closeMenusOnOutside(event:MouseEvent){const target=event.target as Node;if(accountOpen.value&&accountArea.value&&!accountArea.value.contains(target))closeLayer('account');if(storeOpen.value&&storeArea.value&&!storeArea.value.contains(target))closeLayer('store')}
+function closeMenusOnEscape(event:KeyboardEvent){if(event.key==='Escape')closeLayer()}
 onMounted(async()=>{
   await hydrate(true)
   document.addEventListener('click',closeMenusOnOutside)
