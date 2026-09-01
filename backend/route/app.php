@@ -111,8 +111,10 @@ Route::group('api/v1/storefront/sites', function () {
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
 // ---- 支付 ----
+Route::post('api/v1/payment-callbacks/:channel', 'PaymentController/callback');
 Route::get('api/v1/payment-channels', 'PaymentController/channels')->middleware(\app\common\middleware\AuthMiddleware::class);
 Route::post('api/v1/orders/:orderId/payments', 'PaymentController/create')->middleware(\app\common\middleware\AuthMiddleware::class);
+Route::get('api/v1/orders/:orderId/refunds', 'PaymentController/refunds')->middleware(\app\common\middleware\AuthMiddleware::class);
 
 // ---- 订单 ----
 Route::group('api/v1/orders', function () {
