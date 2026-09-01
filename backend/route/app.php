@@ -55,6 +55,27 @@ Route::group('api/v1/admin', function () {
     Route::delete('roles/:id', 'RoleController/delete')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.role.delete');
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
+// ---- 消费者与营销 ----
+Route::group('api/v1/customers', function () {
+    Route::get('/', 'CustomerController/index');
+    Route::post('/', 'CustomerController/create');
+    Route::get('/:id', 'CustomerController/read');
+    Route::put('/:id', 'CustomerController/update');
+    Route::get('/:id/addresses', 'CustomerController/addresses');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+Route::group('api/v1/marketing', function () {
+    Route::get('coupons', 'MarketingController/coupons');
+    Route::post('coupons', 'MarketingController/createCoupon');
+    Route::post('coupons/:couponId/claims', 'MarketingController/claim');
+    Route::get('campaigns', 'MarketingController/campaigns');
+    Route::get('approvals', 'MarketingController/approvals');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+Route::group('api/v1/content', function () {
+    Route::get('reviews', 'ContentReviewController/index');
+    Route::post(':contentId/reviews', 'ContentReviewController/submit');
+    Route::post('reviews/:id', 'ContentReviewController/review');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+
 // ---- 素材库 ----
 Route::group('api/v1/assets', function () {
     Route::get('/', 'AssetController/index');

@@ -1,0 +1,10 @@
+<?php
+declare(strict_types=1);
+namespace app\controller;
+use app\common\controller\ApiController;use app\common\exception\BusinessException;use think\facade\Db;use think\Request;use think\Response;
+final class ContentReviewController extends ApiController
+{
+ public function submit(Request $request,int $contentId):Response{$content=Db::name('storefront_content')->where('id',$contentId)->find();if(!$content)throw BusinessException::notFound('内容不存在');$member=$this->requireMember();$existing=Db::name('content_review_requests')->where('content_id',$contentId)->where('status','pending')->find();if($existing)throw new BusinessException('RESOURCE_CONFLICT','该内容已有待审核申请',409);$id=Db::name('content_review_requests')->insertGetId(['content_id'=>$contentId,'status'=>'pending','submitted_by'=>$member->id,'created_at'=>date('Y-m-d H:i:s'),'updated_at'=>date('Y-m-d H:i:s')]);return $this->success(Db::name('content_review_requests')->where('id',$id)->find(),'内容已提交审核',201);}
+ public function review(Request $request,int $id):Response{$this->validate($request->post(),['status'=>'require|in:approved,rejected','comment'=>'max:500']);$review=Db::name('content_review_requests')->where('id',$id)->find();if(!$review)throw BusinessException::notFound('审核申请不存在');$member=$this->requireMember();$status=$request->post('status');Db::transaction(function()use($review,$member,$status,$request){$now=date('Y-m-d H:i:s');Db::name('content_review_requests')->where('id',$review['id'])->update(['status'=>$status,'reviewed_by'=>$member->id,'reviewed_at'=>$now,'comment'=>$request->post('comment'),'updated_at'=>$now]);if($status==='approved')Db::name('storefront_content')->where('id',$review['content_id'])->update(['status'=>'published','published_at'=>$now,'updated_at'=>$now]);});return $this->success(null,$status==='approved'?'内容审核通过并已发布':'内容审核已驳回');}
+ public function index(Request $request):Response{$page=max(1,(int)$request->get('page',1));$size=min(100,max(1,(int)$request->get('page_size',20)));$q=Db::name('content_review_requests');$total=$q->count();return $this->paginated($q->order('id','desc')->page($page,$size)->select(),$page,$size,$total);}
+}
