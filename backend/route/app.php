@@ -93,6 +93,7 @@ Route::group('api/v1', function () {
     Route::post('fulfillments/:id/ship', 'FulfillmentController/ship');
     Route::get('shipment-packages/:packageId/tracking-events', 'FulfillmentController/tracking');
     Route::post('shipment-packages/:packageId/tracking-events', 'FulfillmentController/addTracking');
+    Route::post('shipment-packages/:packageId/subscriptions', 'LogisticsSubscriptionController/subscribe');
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
 // ---- 独立站 ----
