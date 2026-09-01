@@ -3,15 +3,18 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../../composables/useAuth'
 import { useToast } from '../../composables/useToast'
+import GlobalSearch from './GlobalSearch.vue'
+import HelpMenu from './HelpMenu.vue'
+import NotificationCenter from './NotificationCenter.vue'
 import {
-  BarChart3, Bell, Box, Check, ChevronDown, CircleHelp, ClipboardList, FileText,
-  Gift, LayoutDashboard, Megaphone, Menu, PackageSearch, Search, Settings,
+  BarChart3, Bell, Box, Check, ChevronDown, ClipboardList, FileText,
+  LayoutDashboard, Megaphone, Menu, PackageSearch, Settings,
   TicketPercent, Truck, Users, Warehouse, X, Grid3X3, LogOut, ShieldCheck, UserRound, Globe2,
 } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
-const { member, hydrate, logout: signOut } = useAuth()
+const { member, avatarPreview, hydrate, logout: signOut } = useAuth()
 const { success } = useToast()
 const mobileOpen = ref(false)
 const accountOpen = ref(false)
@@ -36,6 +39,7 @@ const navItems = [
   { to: '/features', label: '功能地图', icon: Grid3X3 },
 ]
 const pageTitle = computed(() => String(route.meta.title || '运营控制台'))
+const avatarSource = computed(()=>avatarPreview.value||member.value?.avatar||'')
 function isNavActive(path:string){return path==='/'?route.path==='/' : route.path===path||route.path.startsWith(`${path}/`)}
 function openAccountPage(tab:string){accountOpen.value=false;router.push({path:'/member/profile',query:{tab}})}
 async function logout(){accountOpen.value=false;await signOut();router.push('/login')}
@@ -76,8 +80,8 @@ onBeforeUnmount(()=>{document.removeEventListener('click',closeMenusOnOutside);d
             <button class="account-menu-logout" role="menuitem" @click="logout"><LogOut :size="17"/><span>退出当前账号</span></button>
           </div>
         </Transition>
-        <button class="sidebar-profile" :class="{expanded:accountOpen}" aria-haspopup="menu" :aria-expanded="accountOpen" @click.stop="toggleAccount">
-          <div class="avatar">{{ member?.name?.[0] || '用' }}</div>
+        <button class="sidebar-profile" :class="{expanded:accountOpen}" aria-haspopup="menu" :aria-expanded="accountOpen" @click="toggleAccount">
+          <div class="avatar"><img v-if="avatarSource" :src="avatarSource" alt=""/><template v-else>{{ member?.name?.[0] || '用' }}</template></div>
           <div><strong>{{ member?.name || '加载中' }}</strong><span>{{ member?.email || '成员账号' }}</span></div>
           <ChevronDown class="account-chevron" :size="16" />
         </button>
@@ -91,7 +95,7 @@ onBeforeUnmount(()=>{document.removeEventListener('click',closeMenusOnOutside);d
         <div class="topbar-left">
           <button class="mobile-menu" aria-label="打开导航" @click="mobileOpen = true"><Menu :size="20" /></button>
           <div ref="storeArea" class="store-switcher-wrap">
-            <button class="store-switcher" :class="{expanded:storeOpen}" aria-haspopup="menu" :aria-expanded="storeOpen" @click.stop="toggleStore"><Box :size="17" /><span>{{selectedStore}}</span><ChevronDown class="store-chevron" :size="15" /></button>
+            <button class="store-switcher" :class="{expanded:storeOpen}" aria-haspopup="menu" :aria-expanded="storeOpen" @click="toggleStore"><Box :size="17" /><span>{{selectedStore}}</span><ChevronDown class="store-chevron" :size="15" /></button>
             <Transition name="store-menu">
               <div v-if="storeOpen" class="store-menu" role="menu" aria-label="切换店铺与渠道">
                 <div class="store-menu-heading"><strong>切换经营视图</strong><span>当前页面数据将按所选渠道展示</span></div>
@@ -99,17 +103,13 @@ onBeforeUnmount(()=>{document.removeEventListener('click',closeMenusOnOutside);d
               </div>
             </Transition>
           </div>
-          <label class="global-search">
-            <Search :size="17" />
-            <input placeholder="搜索订单、商品或用户..." />
-            <kbd>⌘ K</kbd>
-          </label>
+          <GlobalSearch />
         </div>
         <div class="topbar-actions">
-          <button aria-label="帮助"><CircleHelp :size="19" /></button>
-          <button class="notification" aria-label="通知"><Bell :size="19" /><i></i></button>
+          <HelpMenu />
+          <NotificationCenter />
           <span class="topbar-divider"></span>
-          <button class="topbar-avatar" aria-label="打开个人资料" @click="router.push('/member/profile')">{{ member?.name?.[0] || '用' }}</button>
+          <button class="topbar-avatar" aria-label="打开个人资料" @click="router.push('/member/profile')"><img v-if="avatarSource" :src="avatarSource" alt=""/><template v-else>{{ member?.name?.[0] || '用' }}</template></button>
         </div>
       </header>
       <main class="page-canvas" :aria-label="pageTitle">

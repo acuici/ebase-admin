@@ -24,6 +24,7 @@ interface LoginResponse {
 
 const member = ref<MemberProfile | null>(null)
 const hydrated = ref(false)
+const avatarPreview = ref<string | null>(localStorage.getItem('ebase:member-avatar'))
 
 function clearTokens(): void {
   localStorage.removeItem('ebase:access_token')
@@ -100,13 +101,21 @@ export function useAuth() {
     }
   }
 
+  function setAvatarPreview(value:string|null):void {
+    avatarPreview.value=value
+    if(value)localStorage.setItem('ebase:member-avatar',value)
+    else localStorage.removeItem('ebase:member-avatar')
+  }
+
   return {
     member: readonly(member),
+    avatarPreview: readonly(avatarPreview),
     hydrated: readonly(hydrated),
     isAuthenticated,
     login,
     hydrate,
     updateProfile,
+    setAvatarPreview,
     logout,
   }
 }

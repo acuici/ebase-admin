@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Activity, Bell, Check, Clock3, KeyRound, Laptop, LogOut, MapPin, RefreshCw, Save, ShieldCheck, Smartphone, UserRound } from 'lucide-vue-next'
+import { Activity, Bell, Camera, Check, Clock3, KeyRound, Laptop, LogOut, MapPin, RefreshCw, Save, ShieldCheck, Smartphone, Trash2, UserRound } from 'lucide-vue-next'
 import { listAuthLogs, listSessions, revokeOtherSessions, revokeSession, type AuthLog, type MemberSession } from '../api/security'
 import { ApiError } from '../api/client'
 import { useAuth } from '../composables/useAuth'
@@ -9,7 +9,7 @@ import { useToast } from '../composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
-const { member, hydrate, logout, updateProfile } = useAuth()
+const { member, avatarPreview, setAvatarPreview, hydrate, logout, updateProfile } = useAuth()
 const { success, error: showError } = useToast()
 const validTabs = ['profile', 'security', 'notifications']
 const tab = ref(validTabs.includes(String(route.query.tab)) ? String(route.query.tab) : 'profile')
@@ -18,6 +18,7 @@ const saving = ref(false)
 const securityLoading = ref(false)
 const sessions = ref<MemberSession[]>([])
 const authLogs = ref<AuthLog[]>([])
+const avatarInput = ref<HTMLInputElement | null>(null)
 const form = reactive({
   name: '',
   phone: '',
@@ -29,6 +30,20 @@ const form = reactive({
 
 const displayName = computed(() => member.value?.name || form.name || '成员')
 const displayEmail = computed(() => member.value?.email || '成员账号')
+const avatarSource = computed(() => avatarPreview.value || member.value?.avatar || '')
+
+function chooseAvatar(event:Event):void {
+  const input=event.target as HTMLInputElement
+  const file=input.files?.[0]
+  if(!file)return
+  if(!file.type.startsWith('image/')){showError('头像格式不支持','请选择 JPG、PNG 或 WebP 图片');input.value='';return}
+  if(file.size>1024*1024){showError('头像文件过大','请选择不超过 1 MB 的图片');input.value='';return}
+  const reader=new FileReader()
+  reader.onload=()=>{setAvatarPreview(String(reader.result));success('头像已更新','新的头像已同步到顶部与侧栏')}
+  reader.readAsDataURL(file)
+  input.value=''
+}
+function removeAvatar():void {setAvatarPreview(null);success('头像已移除','已恢复为姓名首字头像')}
 
 function syncForm(): void {
   if (!member.value) return
@@ -140,7 +155,7 @@ onMounted(async () => {
     <div class="profile-layout">
       <aside class="surface profile-nav">
         <div class="profile-person">
-          <span>{{ displayName[0] }}</span>
+          <span><img v-if="avatarSource" :src="avatarSource" alt="个人头像"/><template v-else>{{ displayName[0] }}</template></span>
           <h3>{{ displayName }}</h3>
           <p>{{ form.job_title || '成员' }} · {{ form.department || '未设置部门' }}</p>
           <i>{{ member?.status === 1 ? '账号正常' : '账号已停用' }}</i>
@@ -158,6 +173,7 @@ onMounted(async () => {
         <template v-else-if="tab === 'profile'">
           <article class="surface editor-section">
             <header><span><UserRound :size="18" /></span><div><h2>个人信息</h2><p>姓名会展示在成员目录与操作记录中。</p></div></header>
+            <div class="avatar-editor"><input ref="avatarInput" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" @change="chooseAvatar"/><span class="avatar-preview"><img v-if="avatarSource" :src="avatarSource" alt="个人头像预览"/><template v-else>{{displayName[0]}}</template></span><div><strong>个人头像</strong><p>建议使用正方形 JPG、PNG 或 WebP，文件不超过 1 MB。</p><span><button class="button secondary" @click="avatarInput?.click()"><Camera :size="14"/>{{avatarSource?'更换头像':'上传头像'}}</button><button v-if="avatarSource" class="avatar-remove" @click="removeAvatar"><Trash2 :size="14"/>移除</button></span></div></div>
             <div class="editor-fields">
               <label><span>姓名</span><input v-model="form.name" /></label>
               <label><span>工作邮箱</span><input :value="displayEmail" disabled /></label>
