@@ -40,3 +40,88 @@
 .crud-form textarea {
   font-family: inherit;
 }
+
+/* 功能地图使用一致的文档层级：区块标题、主要内容、辅助信息。 */
+.hub-overview span {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.hub-overview strong {
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.hub-overview strong.healthy {
+  font-size: 18px;
+}
+
+.hub-overview small {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.hub-section h2 {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.hub-section > header > span,
+.hub-filter > span {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.recent-grid strong,
+.favorite-strip button {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.recent-grid small {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.group-tabs button {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.group-tabs span {
+  font-size: 11px;
+}
+
+.feature-card > span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.feature-card h2 {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.feature-card p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.feature-meta small,
+.feature-meta b {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.feature-enter {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.hub-empty p,
+.hub-empty button {
+  font-size: 12px;
+  line-height: 1.5;
+}
