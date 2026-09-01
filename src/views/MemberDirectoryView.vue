@@ -5,6 +5,7 @@ import { Download, Filter, MoreHorizontal, Plus, Search, ShieldCheck, UserCheck,
 import { ApiError } from '../api/client'
 import { listMembers, type AdminMember } from '../api/members'
 import { useToast } from '../composables/useToast'
+import TableState from '../components/common/TableState.vue'
 
 const router = useRouter()
 const { error: showError, info } = useToast()
@@ -80,9 +81,9 @@ onMounted(() => { void loadMembers() })
         <button class="button secondary" @click="loadMembers"><Filter :size="15" />刷新</button>
       </header>
 
-      <div v-if="loading" class="empty-state">正在加载成员目录...</div>
-      <div v-else-if="loadError" class="empty-state"><p>{{ loadError }}</p><button class="button secondary" @click="loadMembers">重试</button></div>
-      <div v-else-if="!members.length" class="empty-state">没有符合条件的成员</div>
+      <TableState v-if="loading" state="loading" title="正在加载成员目录" description="正在同步成员、角色和账号状态。" />
+      <TableState v-else-if="loadError" state="error" title="成员目录加载失败" :description="loadError"><template #action><button class="button secondary" @click="loadMembers">重新加载</button></template></TableState>
+      <TableState v-else-if="!members.length" state="empty" :filtered="Boolean(query || tab !== '全部成员')" title="没有找到成员" description="当前条件下没有成员，调整状态或搜索关键词后再试。"><template #action><button v-if="query || tab !== '全部成员'" class="button secondary" @click="query='';tab='全部成员'">清除筛选</button></template></TableState>
       <div v-else class="table-scroll">
         <table class="member-table">
           <thead><tr><th>成员</th><th>角色</th><th>账号状态</th><th>最近登录</th><th></th></tr></thead>
