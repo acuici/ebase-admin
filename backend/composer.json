@@ -25,7 +25,10 @@
         "topthink/think-orm": "^3.0|^4.0",
         "topthink/think-filesystem": "^2.0|^3.0",
         "firebase/php-jwt": "^7.1",
-        "topthink/think-multi-app": "^1.1"
+        "topthink/think-multi-app": "^1.1",
+        "aws/aws-sdk-php": "^3.394",
+        "guzzlehttp/guzzle": "^8.1",
+        "symfony/mailer": "^8.1"
     },
     "require-dev": {
         "topthink/think-dumper": "^1.0",

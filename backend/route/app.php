@@ -54,7 +54,24 @@ Route::group('api/v1/admin', function () {
     Route::delete('roles/:id', 'RoleController/delete');
 })->middleware([\app\common\middleware\AuthMiddleware::class, \app\common\middleware\PermissionMiddleware::class]);
 
+// ---- 订单 ----
+Route::group('api/v1/orders', function () {
+    Route::get('/', 'OrderController/index');
+    Route::post('/', 'OrderController/create');
+    Route::get('/:id', 'OrderController/read');
+    Route::post('/:id/cancel', 'OrderController/cancel');
+    Route::post('/:id/transition', 'OrderController/transition');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+
 // ---- 商品与目录 ----
+// SKU 嵌套路由必须在商品 /:id 路由前定义。
+Route::group('api/v1/products/:productId/skus', function () {
+    Route::get('/', 'ProductSkuController/index');
+    Route::post('/', 'ProductSkuController/create');
+    Route::put('/:id', 'ProductSkuController/update');
+    Route::post('/:id/stock-adjustments', 'ProductSkuController/adjustStock');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+
 Route::group('api/v1/products', function () {
     Route::get('/', 'ProductController/index');
     Route::post('/', 'ProductController/create');
