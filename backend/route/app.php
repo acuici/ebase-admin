@@ -52,6 +52,15 @@ Route::group('api/v1/admin', function () {
     Route::delete('roles/:id', 'RoleController/delete')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.role.delete');
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
+// ---- 素材库 ----
+Route::group('api/v1/assets', function () {
+    Route::get('/', 'AssetController/index');
+    Route::post('/', 'AssetController/upload');
+    Route::post('/:id/relations', 'AssetController/attach');
+    Route::get('/:id/download', 'AssetController/download');
+    Route::delete('/:id', 'AssetController/delete');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+
 // ---- 渠道订单与履约 ----
 Route::post('api/v1/channel-orders/import', 'ChannelOrderController/import')->middleware(\app\common\middleware\AuthMiddleware::class);
 Route::group('api/v1', function () {
