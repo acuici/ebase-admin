@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { getSystemSettings } from '../api/settings'
 
-const systemName = ref('EBASE 商业运营后台')
+const systemName = ref('LUMEA 商业运营后台')
 
 export function useSystemBranding() {
   async function loadBranding(): Promise<void> {

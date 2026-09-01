@@ -38,7 +38,7 @@ async function login(): Promise<void> {
 <template>
   <main class="auth-page">
     <section class="auth-story">
-      <div class="auth-brand"><span>AC</span><strong>AC · 清透商业</strong></div>
+      <div class="auth-brand"><span>LM</span><strong>LUMEA · 商业</strong></div>
       <div class="auth-copy">
         <span class="auth-kicker">EBASE COMMERCE OS</span>
         <h1>把复杂经营，<br>收束成清晰行动。</h1>
@@ -54,7 +54,7 @@ async function login(): Promise<void> {
 
     <section class="auth-form-panel">
       <form class="auth-form" @submit.prevent="login">
-        <div class="auth-mobile-brand"><span>AC</span><strong>清透商业</strong></div>
+        <div class="auth-mobile-brand"><span>LM</span><strong>LUMEA · 商业</strong></div>
         <span class="eyebrow">MEMBER ACCESS</span>
         <h2>欢迎回来</h2>
         <p>使用企业成员账号进入运营控制台。</p>

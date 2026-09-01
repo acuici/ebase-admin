@@ -65,8 +65,8 @@ onBeforeUnmount(()=>{document.removeEventListener('click',closeMenusOnOutside);d
   <div class="app-shell">
     <aside class="sidebar" :class="{ open: mobileOpen }">
       <div class="brand">
-        <div class="brand-mark">AC</div>
-        <div><strong>AC · 清透商业</strong><span>多商户运营系统</span></div>
+        <div class="brand-mark">LM</div>
+        <div><strong>LUMEA · 商业</strong><span>多商户运营系统</span></div>
         <button class="mobile-close" aria-label="关闭导航" @click="mobileOpen = false"><X :size="18" /></button>
       </div>
       <nav class="nav-list">
