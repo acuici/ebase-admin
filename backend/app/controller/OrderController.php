@@ -22,7 +22,13 @@ class OrderController extends ApiController
     public function read(int $id): Response
     {
         $order=Order::with('items')->find($id); if(!$order) throw BusinessException::notFound('订单不存在');
-        return $this->success($order);
+        $data=$order->toArray();
+        // 敏感/渠道原始字段仅作为独立扩展返回，不混入订单主字段。
+        $data['channel_extension']=\think\facade\Db::name('order_channel_extensions')->where('order_id',$id)->find();
+        $data['payments']=\think\facade\Db::name('payments')->where('order_id',$id)->order('id','desc')->select();
+        $data['fulfillments']=\think\facade\Db::name('fulfillments')->where('order_id',$id)->order('id','desc')->select();
+        $data['status_logs']=\think\facade\Db::name('order_status_logs')->where('order_id',$id)->order('id','asc')->select();
+        return $this->success($data);
     }
     public function create(Request $request): Response
     {
