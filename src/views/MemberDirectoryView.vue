@@ -1,7 +1,110 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'; import { useRouter } from 'vue-router'; import { Download, Filter, MoreHorizontal, Plus, Search, ShieldCheck, UserCheck, UserRoundX, Users } from 'lucide-vue-next'
-const router=useRouter(); const query=ref(''); const tab=ref('全部成员'); const tabs=['全部成员','正常','待加入','已停用'];
-const members=[{id:'m-001',name:'林知夏',initial:'林',email:'lin.zhixia@ebase.cn',role:'运营总监',department:'运营中心',scope:'全部业务数据',status:'正常',last:'今天 10:42'},{id:'m-002',name:'陈曦',initial:'陈',email:'chen.xi@ebase.cn',role:'营销主管',department:'增长中心',scope:'营销与用户数据',status:'正常',last:'今天 09:18'},{id:'m-003',name:'周宁',initial:'周',email:'zhou.ning@ebase.cn',role:'仓库主管',department:'供应链中心',scope:'仓储与物流数据',status:'正常',last:'昨天 18:06'},{id:'m-004',name:'沈言',initial:'沈',email:'shen.yan@ebase.cn',role:'内容编辑',department:'品牌内容部',scope:'内容数据',status:'待加入',last:'邀请于 2 小时前'},{id:'m-005',name:'苏岚',initial:'苏',email:'su.lan@ebase.cn',role:'财务专员',department:'财务中心',scope:'订单与财务数据',status:'已停用',last:'2026-08-26'}];
-const filtered=computed(()=>members.filter(m=>(tab.value==='全部成员'||m.status===tab.value)&&`${m.name}${m.email}${m.role}${m.department}`.toLowerCase().includes(query.value.toLowerCase())))
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { Download, Filter, MoreHorizontal, Plus, Search, ShieldCheck, UserCheck, UserRoundX, Users } from 'lucide-vue-next'
+import { ApiError } from '../api/client'
+import { listMembers, type AdminMember } from '../api/members'
+import { useToast } from '../composables/useToast'
+
+const router = useRouter()
+const { error: showError, info } = useToast()
+const query = ref('')
+const tab = ref('全部成员')
+const tabs = ['全部成员', '正常', '已停用']
+const members = ref<AdminMember[]>([])
+const total = ref(0)
+const loading = ref(true)
+const loadError = ref('')
+
+const activeMembers = computed(() => members.value.filter(member => member.status === 1).length)
+const disabledMembers = computed(() => members.value.filter(member => member.status === 0).length)
+
+function statusFilter(): number | undefined {
+  if (tab.value === '正常') return 1
+  if (tab.value === '已停用') return 0
+  return undefined
+}
+
+async function loadMembers(): Promise<void> {
+  loading.value = true
+  loadError.value = ''
+  try {
+    const data = await listMembers({ page: 1, page_size: 100, keyword: query.value, status: statusFilter() })
+    members.value = data.items
+    total.value = data.pagination.total
+  } catch (exception) {
+    loadError.value = exception instanceof ApiError ? exception.body.message : '成员目录加载失败'
+  } finally {
+    loading.value = false
+  }
+}
+
+function memberRole(member: AdminMember): string {
+  return member.is_super === 1 ? '超级管理员' : member.roles.map(role => role.name).join('、') || '未分配角色'
+}
+
+function displayStatus(member: AdminMember): string {
+  return member.status === 1 ? '正常' : '已停用'
+}
+
+function exportMembers(): void {
+  info('导出任务未创建', '当前后端尚未提供成员 CSV 导出接口。')
+}
+
+watch([query, tab], () => { void loadMembers() })
+onMounted(() => { void loadMembers() })
 </script>
-<template><section class="data-page member-page"><div class="page-heading"><div><span class="eyebrow">ORGANIZATION · 组织权限</span><h1>成员目录</h1><p>管理内部员工账号、角色、部门与数据访问范围。</p></div><div class="heading-actions"><button class="button secondary"><Download :size="15"/>导出成员</button><button class="button primary" @click="router.push('/settings/members/invite')"><Plus :size="16"/>邀请成员</button></div></div><div class="metric-strip member-metrics"><div class="metric-item"><span>全部成员</span><strong>86</strong><small>覆盖 7 个部门</small></div><div class="metric-item"><span>本月活跃</span><strong>79</strong><small><b>91.8%</b>活跃率</small></div><div class="metric-item"><span>待接受邀请</span><strong>4</strong><small>最早于 3 天前发送</small></div><div class="metric-item"><span>启用双重验证</span><strong>68</strong><small><b>+12</b>较上月</small></div></div><div class="member-tabs"><button v-for="item in tabs" :class="{active:tab===item}" @click="tab=item">{{item}}</button></div><article class="surface member-table-card"><header class="member-toolbar"><label class="module-search"><Search :size="16"/><input v-model="query" placeholder="搜索姓名、邮箱、部门或角色"/></label><button class="button secondary"><Filter :size="15"/>筛选部门与角色</button></header><div class="table-scroll"><table class="member-table"><thead><tr><th>成员</th><th>角色</th><th>所属部门</th><th>数据范围</th><th>状态</th><th>最近活动</th><th></th></tr></thead><tbody><tr v-for="m in filtered" @click="router.push('/settings/members/'+m.id)"><td><div class="member-identity"><span>{{m.initial}}</span><div><strong>{{m.name}}</strong><small>{{m.email}}</small></div></div></td><td>{{m.role}}</td><td>{{m.department}}</td><td>{{m.scope}}</td><td><span class="member-status" :data-status="m.status">{{m.status}}</span></td><td class="muted">{{m.last}}</td><td><button class="row-action"><MoreHorizontal :size="16"/></button></td></tr></tbody></table></div><footer class="table-footer"><span>显示 {{filtered.length}} 位示例成员，共 86 位</span><div><button class="active">1</button><button>2</button><button>3</button><button>下一页</button></div></footer></article><div class="member-insights"><div><Users :size="18"/><span><b>12 个角色</b>已建立清晰职责边界</span></div><div><ShieldCheck :size="18"/><span><b>3 位管理员</b>拥有全部系统权限</span></div><div><UserCheck :size="18"/><span><b>4 个邀请</b>等待成员接受</span></div><div><UserRoundX :size="18"/><span><b>2 个账号</b>超过 30 天未登录</span></div></div></section></template>
+
+<template>
+  <section class="data-page member-page">
+    <div class="page-heading">
+      <div><span class="eyebrow">ORGANIZATION · 组织权限</span><h1>成员目录</h1><p>管理内部员工账号、角色与账号状态。</p></div>
+      <div class="heading-actions">
+        <button class="button secondary" @click="exportMembers"><Download :size="15" />导出成员</button>
+        <button class="button primary" @click="router.push('/settings/members/invite')"><Plus :size="16" />邀请成员</button>
+      </div>
+    </div>
+
+    <div class="metric-strip member-metrics">
+      <div class="metric-item"><span>全部成员</span><strong>{{ total }}</strong><small>当前已加载目录</small></div>
+      <div class="metric-item"><span>正常成员</span><strong>{{ activeMembers }}</strong><small>可正常访问后台</small></div>
+      <div class="metric-item"><span>已停用</span><strong>{{ disabledMembers }}</strong><small>会话已撤销</small></div>
+      <div class="metric-item"><span>超级管理员</span><strong>{{ members.filter(m => m.is_super === 1).length }}</strong><small>拥有全部权限</small></div>
+    </div>
+
+    <div class="member-tabs"><button v-for="item in tabs" :key="item" :class="{ active: tab === item }" @click="tab = item">{{ item }}</button></div>
+
+    <article class="surface member-table-card">
+      <header class="member-toolbar">
+        <label class="module-search"><Search :size="16" /><input v-model="query" placeholder="搜索姓名或邮箱" /></label>
+        <button class="button secondary" @click="loadMembers"><Filter :size="15" />刷新</button>
+      </header>
+
+      <div v-if="loading" class="empty-state">正在加载成员目录...</div>
+      <div v-else-if="loadError" class="empty-state"><p>{{ loadError }}</p><button class="button secondary" @click="loadMembers">重试</button></div>
+      <div v-else-if="!members.length" class="empty-state">没有符合条件的成员</div>
+      <div v-else class="table-scroll">
+        <table class="member-table">
+          <thead><tr><th>成员</th><th>角色</th><th>账号状态</th><th>最近登录</th><th></th></tr></thead>
+          <tbody>
+            <tr v-for="member in members" :key="member.id" @click="router.push('/settings/members/' + member.id)">
+              <td><div class="member-identity"><span>{{ member.name[0] }}</span><div><strong>{{ member.name }}</strong><small>{{ member.email }}</small></div></div></td>
+              <td>{{ memberRole(member) }}</td>
+              <td><span class="member-status" :data-status="displayStatus(member)">{{ displayStatus(member) }}</span></td>
+              <td class="muted">{{ member.last_login_at || '从未登录' }}</td>
+              <td><button class="row-action" @click.stop="router.push('/settings/members/' + member.id)"><MoreHorizontal :size="16" /></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-footer"><span>共 {{ total }} 位成员</span></footer>
+    </article>
+
+    <div class="member-insights">
+      <div><Users :size="18" /><span><b>{{ total }} 位成员</b>来自真实后端目录</span></div>
+      <div><ShieldCheck :size="18" /><span><b>{{ members.filter(m => m.is_super === 1).length }} 位管理员</b>拥有全部系统权限</span></div>
+      <div><UserCheck :size="18" /><span><b>{{ activeMembers }} 个账号</b>当前可正常访问</span></div>
+      <div><UserRoundX :size="18" /><span><b>{{ disabledMembers }} 个账号</b>已停用</span></div>
+    </div>
+  </section>
+</template>
