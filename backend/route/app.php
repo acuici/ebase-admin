@@ -54,6 +54,18 @@ Route::group('api/v1/admin', function () {
     Route::delete('roles/:id', 'RoleController/delete');
 })->middleware([\app\common\middleware\AuthMiddleware::class, \app\common\middleware\PermissionMiddleware::class]);
 
+// ---- 独立站 ----
+Route::group('api/v1/storefront/sites', function () {
+    Route::get('/', 'StorefrontSiteController/index');
+    Route::post('/', 'StorefrontSiteController/create');
+    Route::get('/:id', 'StorefrontSiteController/read');
+    Route::put('/:id', 'StorefrontSiteController/update');
+    Route::get('/:siteId/products', 'StorefrontListingController/index');
+    Route::put('/:siteId/products/:productId', 'StorefrontListingController/upsert');
+    Route::get('/:siteId/content', 'StorefrontContentController/index');
+    Route::put('/:siteId/content', 'StorefrontContentController/upsert');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+
 // ---- 支付 ----
 Route::get('api/v1/payment-channels', 'PaymentController/channels')->middleware(\app\common\middleware\AuthMiddleware::class);
 Route::post('api/v1/orders/:orderId/payments', 'PaymentController/create')->middleware(\app\common\middleware\AuthMiddleware::class);

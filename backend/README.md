@@ -41,5 +41,10 @@ Change it before any shared or production deployment.
 - `GET /api/v1/products/:id` (Bearer)
 - `PUT /api/v1/products/:id` (Bearer)
 - `DELETE /api/v1/products/:id` (Bearer, archives product)
+- `GET|POST /api/v1/storefront/sites` (Bearer)
+- `GET|PUT /api/v1/storefront/sites/:id` (Bearer)
+- `GET /api/v1/storefront/sites/:siteId/products` (Bearer)
+- `PUT /api/v1/storefront/sites/:siteId/products/:productId` (Bearer; storefront channel listing)
+- `GET|PUT /api/v1/storefront/sites/:siteId/content` (Bearer; theme/navigation/page/policy/campaign/SEO redirect)
 
 All responses include `code`, `message`, `data/errors`, and `request_id`. Refresh tokens are stored as SHA-256 hashes in Redis and are rotated on refresh.
