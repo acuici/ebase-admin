@@ -59,7 +59,7 @@ final class OperationsController extends ApiController
 
     private function customers(string $keyword, int $page, int $size): array
     {
-        $query = Db::name('customers')->field('id,customer_no,name,email,phone,status,source_channel,created_at');
+        $query = Db::name('customers')->alias('c')->field("c.id,c.customer_no,c.name,c.email,c.phone,c.status,c.source_channel,c.created_at,(SELECT COUNT(*) FROM orders o WHERE o.customer_id=c.id) AS order_count,COALESCE((SELECT SUM(o2.total_amount) FROM orders o2 WHERE o2.customer_id=c.id AND o2.status NOT IN ('cancelled')),0) AS total_spend,(SELECT MAX(o3.created_at) FROM orders o3 WHERE o3.customer_id=c.id AND o3.status NOT IN ('cancelled')) AS last_order_at,(SELECT GROUP_CONCAT(t.name ORDER BY t.id SEPARATOR '、') FROM customer_tag_relations r JOIN customer_tags t ON t.id=r.tag_id WHERE r.customer_id=c.id) AS tags");
         if ($keyword) $query->whereLike('customer_no|name|email|phone', '%' . addcslashes($keyword, '%_') . '%');
         return $this->result($query, $page, $size);
     }
