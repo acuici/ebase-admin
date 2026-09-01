@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# vue-tsc / vite emitted JS + type artifacts (duplicates of .ts/.vue sources)
+src/**/*.js
+src/**/*.vue.js
+vite.config.js
+vite.config.d.ts
+
+# Agent skills lock (references the excluded .agents skill bundle)
+skills-lock.json
+
+# Runtime config / secrets
+.env
+.env.*
+*.local
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# Design-review & agent-support scratch (not part of the app)
+.agents/
+stitch/
+tools/
+addressbook

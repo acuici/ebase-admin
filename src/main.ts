@@ -1,0 +1,16 @@
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+import './styles/main.css'
+import './styles/workflow.css'
+import './styles/features.css'
+import './styles/steps.css'
+import './styles/interactions.css'
+import './styles/settings.css'
+import './styles/form-typography.css'
+import './styles/feature-hub.css'
+import './styles/crud.css'
+import './styles/crud-validation.css'
+import './styles/members.css'
+
+createApp(App).use(router).mount('#app')
