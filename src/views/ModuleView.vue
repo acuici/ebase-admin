@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight, ChevronDown, Download, MoreHorizontal, Plus, RefreshCw, Search } from 'lucide-vue-next'
 import { getOrder, listOrders, type Order, type OrderDetail } from '../api/orders'
 import { ApiError } from '../api/client'
@@ -8,9 +8,10 @@ import { useToast } from '../composables/useToast'
 import { moduleConfigs } from '../data/moduleConfigs'
 import TableState from '../components/common/TableState.vue'
 const props=defineProps<{title:string}>()
+const route=useRoute()
 const router=useRouter()
 const { success, error: showError, info }=useToast()
-const query=ref(''); const activeTab=ref(0); const selectedRow=ref(0); const selected=ref<number[]>([])
+const query=ref(String(route.query.order_no||'')); const activeTab=ref(0); const selectedRow=ref(0); const selected=ref<number[]>([])
 const config=computed(()=>moduleConfigs[props.title])
 const paths:Record<string,{primary:string;detail:string}>={'订单管理':{primary:'/orders/new',detail:'/orders/EB202609010846'},'物流履约':{primary:'/logistics/SF128604780',detail:'/logistics/SF128604780'},'产品管理':{primary:'/products/new',detail:'/products/new'},'库存中心':{primary:'/inventory/restock',detail:'/inventory/restock'},'用户管理':{primary:'/users/U-286420',detail:'/users/U-286420'},'内容中心':{primary:'/content/new',detail:'/content/new'},'优惠券管理':{primary:'/coupons/new',detail:'/coupons/new'},'营销活动':{primary:'/marketing/new',detail:'/marketing/new'},'数据报表':{primary:'/reports/analysis',detail:'/reports/analysis'},'权限与系统设置':{primary:'/settings/roles/operator',detail:'/settings/roles/operator'}}
 const workflow=computed(()=>paths[props.title])

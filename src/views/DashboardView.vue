@@ -1,13 +1,27 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ArrowRight, CalendarDays, ChevronDown, Download, Plus, RotateCcw, Search } from 'lucide-vue-next'
+import { useToast } from '../composables/useToast'
+import TableState from '../components/common/TableState.vue'
 
+const router = useRouter()
+const { info, success } = useToast()
 const range = ref<'14d' | '30d'>('14d')
+const period = ref('today')
+const orderQuery = ref('')
+const orderStatus = ref('全部状态')
+const refreshing = ref(false)
 const points = [42, 48, 45, 56, 53, 64, 60, 72, 66, 78, 73, 86, 79, 91]
 const previous = [38, 43, 42, 48, 49, 54, 51, 59, 57, 64, 62, 70, 68, 74]
-const linePath = (data: number[]) => data.map((value, index) => `${index ? 'L' : 'M'} ${24 + index * 48} ${200 - value * 1.55}`).join(' ')
-const currentPath = computed(() => linePath(points))
-const previousPath = computed(() => linePath(previous))
+const points30 = [34,38,41,39,45,43,48,52,49,55,58,54,61,59,64,67,63,70,68,74,71,77,75,81,78,84,82,87,85,91]
+const previous30 = points30.map((value,index)=>Math.max(28,value-6-(index%4)))
+const chartPoints = computed(()=>range.value==='14d'?points:points30)
+const chartPrevious = computed(()=>range.value==='14d'?previous:previous30)
+const linePath = (data: number[]) => data.map((value, index) => `${index ? 'L' : 'M'} ${24 + index * (624/Math.max(1,data.length-1))} ${200 - value * 1.55}`).join(' ')
+const currentPath = computed(() => linePath(chartPoints.value))
+const previousPath = computed(() => linePath(chartPrevious.value))
+const chartEndY = computed(()=>200-chartPoints.value.at(-1)!*1.55)
 
 const metrics = [
   { label: '今日成交额', value: '¥286,742.80', delta: '+12.6%', note: '较昨日' },
@@ -45,6 +59,20 @@ const orders = [
   ['#EB202609010840', '许言', '抖音商城', '便携咖啡机 C2 米白', '¥699.00', '抖音支付', '待付款', '09:16'],
   ['#EB202609010839', '苏然', '品牌小程序', '降噪耳机 Air X 银色', '¥1,599.00', '微信支付', '已完成', '09:03'],
 ]
+const filteredOrders = computed(() => orders.filter(order => {
+  const keyword = orderQuery.value.trim().toLowerCase()
+  const matchesKeyword = !keyword || order.some(cell => String(cell).toLowerCase().includes(keyword))
+  const matchesStatus = orderStatus.value === '全部状态' || order[6] === orderStatus.value
+  return matchesKeyword && matchesStatus
+}))
+const todoRoutes: Record<string,string> = {'审核退款申请':'/features/refunds','处理异常订单':'/orders','回复客户咨询':'/users','发布内容草稿':'/content','配置即将到期优惠券':'/coupons'}
+function changePeriod(){info('统计周期已切换',period.value==='today'?'当前展示今日经营数据':'当前展示近 7 天经营数据')}
+function exportReport(){info('导出任务已受理','报表服务尚未接入，正式接口可用后将在下载中心生成文件。')}
+function openTodo(todo:string){const target=todoRoutes[todo];if(target){router.push(target);return}info('功能正在接入','商家入驻审核后端尚未开放，需求已保留在待办列表。')}
+function refreshStructure(){if(refreshing.value)return;refreshing.value=true;window.setTimeout(()=>{refreshing.value=false;success('订单结构已刷新','当前展示最新统计快照。')},500)}
+function requestRestock(sku:string){info('已打开补货流程',`将为 ${sku} 创建补货计划。`);router.push('/inventory/restock')}
+function openOrder(orderNo:string){info('正在打开订单管理',`请在订单列表中确认 ${orderNo}`);router.push({path:'/orders',query:{order_no:orderNo.replace(/^#/,'')}})}
+function clearOrderFilters(){orderQuery.value='';orderStatus.value='全部状态'}
 </script>
 
 <template>
@@ -56,9 +84,9 @@ const orders = [
         <p>聚焦今天最重要的经营变化与待处理事项。</p>
       </div>
       <div class="heading-actions">
-        <button class="button secondary"><CalendarDays :size="16" />今日<ChevronDown :size="15" /></button>
-        <button class="button secondary"><Download :size="16" />导出报表</button>
-        <button class="button primary"><Plus :size="16" />新建活动</button>
+        <label class="button secondary dashboard-period"><CalendarDays :size="16" /><select v-model="period" aria-label="统计周期" @change="changePeriod"><option value="today">今日</option><option value="7d">近 7 天</option></select><ChevronDown :size="15" /></label>
+        <button class="button secondary" @click="exportReport"><Download :size="16" />导出报表</button>
+        <button class="button primary" @click="router.push('/marketing/new')"><Plus :size="16" />新建活动</button>
       </div>
     </div>
 
@@ -77,18 +105,18 @@ const orders = [
           <div class="segmented"><button :class="{ active: range === '14d' }" @click="range = '14d'">14 天</button><button :class="{ active: range === '30d' }" @click="range = '30d'">30 天</button></div>
         </header>
         <div class="chart-wrap">
-          <svg viewBox="0 0 680 220" role="img" aria-label="14 天成交趋势折线图">
+          <svg viewBox="0 0 680 220" role="img" :aria-label="`${range==='14d'?'14':'30'} 天成交趋势折线图`">
             <g class="chart-grid"><line v-for="y in [40, 80, 120, 160, 200]" :key="y" x1="24" :y1="y" x2="648" :y2="y" /></g>
             <path class="previous-line" :d="previousPath" />
             <path class="current-line" :d="currentPath" />
-            <circle cx="552" cy="66" r="5" class="chart-point" />
-            <g class="chart-labels"><text x="24" y="216">08-19</text><text x="168" y="216">08-22</text><text x="312" y="216">08-25</text><text x="456" y="216">08-28</text><text x="618" y="216">09-01</text></g>
+            <circle cx="648" :cy="chartEndY" r="5" class="chart-point" />
+            <g class="chart-labels"><text x="24" y="216">{{range==='14d'?'08-19':'08-03'}}</text><text x="168" y="216">{{range==='14d'?'08-22':'08-10'}}</text><text x="312" y="216">{{range==='14d'?'08-25':'08-17'}}</text><text x="456" y="216">{{range==='14d'?'08-28':'08-24'}}</text><text x="618" y="216">09-01</text></g>
           </svg>
         </div>
       </article>
 
       <article class="surface status-card">
-        <header class="card-heading"><div><h2>订单结构</h2><p>共 1,972 笔有效订单</p></div><button class="icon-button"><RotateCcw :size="16" /></button></header>
+        <header class="card-heading"><div><h2>订单结构</h2><p>共 1,972 笔有效订单</p></div><button class="icon-button" :disabled="refreshing" aria-label="刷新订单结构" @click="refreshStructure"><RotateCcw :size="16" :class="{spinning:refreshing}" /></button></header>
         <div class="status-list">
           <div v-for="item in [['待付款',126,16],['待发货',842,88],['运输中',651,68],['今日送达',320,34],['退货 / 异常',33,7]]" :key="String(item[0])">
             <span>{{ item[0] }}</span><strong>{{ item[1] }}</strong><i><b :style="{ width: item[2] + '%' }"></b></i>
@@ -100,15 +128,15 @@ const orders = [
 
     <div class="operations-grid">
       <article class="surface compact-card">
-        <header class="card-heading"><div><h2>今日待办</h2><p>按业务优先级排序</p></div><button class="text-button">查看全部 <ArrowRight :size="15" /></button></header>
+        <header class="card-heading"><div><h2>今日待办</h2><p>按业务优先级排序</p></div><button class="text-button" @click="router.push('/features')">查看全部 <ArrowRight :size="15" /></button></header>
         <ul class="todo-list">
-          <li v-for="todo in todos" :key="todo[0]"><span class="priority" :data-level="todo[2]"></span><div><strong>{{ todo[0] }} <b>{{ todo[1] }}</b></strong><small>{{ todo[3] }} · {{ todo[4] }}</small></div><ArrowRight :size="15" /></li>
+          <li v-for="todo in todos" :key="todo[0]" tabindex="0" role="button" @click="openTodo(todo[0])" @keydown.enter="openTodo(todo[0])"><span class="priority" :data-level="todo[2]"></span><div><strong>{{ todo[0] }} <b>{{ todo[1] }}</b></strong><small>{{ todo[3] }} · {{ todo[4] }}</small></div><ArrowRight :size="15" /></li>
         </ul>
       </article>
       <article class="surface compact-card">
-        <header class="card-heading"><div><h2>库存风险</h2><p>6 个 SKU 需要优先处理</p></div><button class="text-button">库存中心 <ArrowRight :size="15" /></button></header>
+        <header class="card-heading"><div><h2>库存风险</h2><p>6 个 SKU 需要优先处理</p></div><button class="text-button" @click="router.push('/inventory')">库存中心 <ArrowRight :size="15" /></button></header>
         <ul class="stock-list">
-          <li v-for="(item, index) in stockRisks" :key="item[1]"><span class="product-thumb">{{ index + 1 }}</span><div><strong>{{ item[0] }}</strong><small>{{ item[1] }} · 预计 {{ item[4] }}</small></div><p><b :class="{ critical: Number(item[2]) < 5 }">{{ item[2] }}</b><span>/ {{ item[3] }}</span></p><button>补货</button></li>
+          <li v-for="(item, index) in stockRisks" :key="item[1]"><span class="product-thumb">{{ index + 1 }}</span><div><strong>{{ item[0] }}</strong><small>{{ item[1] }} · 预计 {{ item[4] }}</small></div><p><b :class="{ critical: Number(item[2]) < 5 }">{{ item[2] }}</b><span>/ {{ item[3] }}</span></p><button @click="requestRestock(String(item[1]))">补货</button></li>
         </ul>
       </article>
     </div>
@@ -116,9 +144,9 @@ const orders = [
     <article class="surface orders-card">
       <header class="orders-toolbar">
         <div><h2>最新订单</h2><p>今天新增 1,846 笔订单</p></div>
-        <div><label class="table-search"><Search :size="15" /><input placeholder="搜索订单" /></label><button class="button secondary">全部状态<ChevronDown :size="14" /></button><button class="text-button">查看全部订单 <ArrowRight :size="15" /></button></div>
+        <div><label class="table-search"><Search :size="15" /><input v-model="orderQuery" placeholder="搜索订单" /></label><label class="button secondary dashboard-status"><select v-model="orderStatus" aria-label="订单状态"><option>全部状态</option><option>待付款</option><option>待发货</option><option>运输中</option><option>已发货</option><option>已完成</option><option>售后中</option></select><ChevronDown :size="14" /></label><button class="text-button" @click="router.push('/orders')">查看全部订单 <ArrowRight :size="15" /></button></div>
       </header>
-      <div class="table-scroll"><table><thead><tr><th>订单号</th><th>客户</th><th>渠道 / 店铺</th><th>商品</th><th class="align-right">金额</th><th>支付方式</th><th>状态</th><th>下单时间</th></tr></thead><tbody><tr v-for="order in orders" :key="order[0]"><td class="mono order-id">{{ order[0] }}</td><td>{{ order[1] }}</td><td>{{ order[2] }}</td><td class="product-name">{{ order[3] }}</td><td class="mono align-right">{{ order[4] }}</td><td>{{ order[5] }}</td><td><span class="status-tag" :data-status="order[6]">{{ order[6] }}</span></td><td class="muted">{{ order[7] }}</td></tr></tbody></table></div>
+      <TableState v-if="!filteredOrders.length" state="empty" filtered title="没有找到订单" description="调整订单号、客户、商品关键词或状态筛选后再试。"><template #action><button class="button secondary" @click="clearOrderFilters">清除筛选</button></template></TableState><div v-else class="table-scroll"><table><thead><tr><th>订单号</th><th>客户</th><th>渠道 / 店铺</th><th>商品</th><th class="align-right">金额</th><th>支付方式</th><th>状态</th><th>下单时间</th></tr></thead><tbody><tr v-for="order in filteredOrders" :key="order[0]" tabindex="0" @click="openOrder(order[0])" @keydown.enter="openOrder(order[0])"><td class="mono order-id">{{ order[0] }}</td><td>{{ order[1] }}</td><td>{{ order[2] }}</td><td class="product-name">{{ order[3] }}</td><td class="mono align-right">{{ order[4] }}</td><td>{{ order[5] }}</td><td><span class="status-tag" :data-status="order[6]">{{ order[6] }}</span></td><td class="muted">{{ order[7] }}</td></tr></tbody></table></div>
     </article>
   </section>
 </template>
