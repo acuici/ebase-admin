@@ -10,6 +10,25 @@ return [
             'private_key_path' => env('WECHAT_PAY_PRIVATE_KEY_PATH', ''),
             'platform_certificate_path' => env('WECHAT_PAY_PLATFORM_CERT_PATH', ''),
         ],
+        'alipay' => [
+            'app_id' => env('ALIPAY_APP_ID', ''),
+            'app_private_key_path' => env('ALIPAY_APP_PRIVATE_KEY_PATH', ''),
+            'public_key_path' => env('ALIPAY_PUBLIC_KEY_PATH', ''),
+            'gateway' => env('ALIPAY_GATEWAY', ''),
+        ],
+        'douyin_pay' => [
+            'app_id' => env('DOUYIN_PAY_APP_ID', ''),
+            'merchant_id' => env('DOUYIN_PAY_MCH_ID', ''),
+            'secret' => env('DOUYIN_PAY_SECRET', ''),
+            'gateway' => env('DOUYIN_PAY_GATEWAY', ''),
+        ],
+        'jd_pay' => [
+            'merchant_no' => env('JD_PAY_MERCHANT_NO', ''),
+            'des_key' => env('JD_PAY_DES_KEY', ''),
+            'rsa_private_key_path' => env('JD_PAY_RSA_PRIVATE_KEY_PATH', ''),
+            'rsa_public_key_path' => env('JD_PAY_RSA_PUBLIC_KEY_PATH', ''),
+            'gateway' => env('JD_PAY_GATEWAY', ''),
+        ],
     ],
     // S3-compatible: MinIO local, then OSS/COS/S3 production endpoint.
     'storage' => [

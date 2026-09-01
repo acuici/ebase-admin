@@ -54,6 +54,10 @@ Route::group('api/v1/admin', function () {
     Route::delete('roles/:id', 'RoleController/delete');
 })->middleware([\app\common\middleware\AuthMiddleware::class, \app\common\middleware\PermissionMiddleware::class]);
 
+// ---- 支付 ----
+Route::get('api/v1/payment-channels', 'PaymentController/channels')->middleware(\app\common\middleware\AuthMiddleware::class);
+Route::post('api/v1/orders/:orderId/payments', 'PaymentController/create')->middleware(\app\common\middleware\AuthMiddleware::class);
+
 // ---- 订单 ----
 Route::group('api/v1/orders', function () {
     Route::get('/', 'OrderController/index');
