@@ -63,6 +63,14 @@ final class OperationsController extends ApiController
                 'risk' => Db::name('logistics_exceptions')->whereIn('status', ['open', 'processing'])->count(),
                 'title' => '物流异常队列',
             ],
+            'campaigns' => [
+                'total' => Db::name('marketing_campaigns')->count(),
+                'secondary' => Db::name('marketing_campaigns')->whereIn('status', ['active', 'running'])->count(),
+                'risk' => Db::name('approval_requests')->where('request_type', 'campaign')->where('status', 'pending')->count(),
+                'title' => '营销审批队列',
+            ],
+            'content' => ['total' => Db::name('storefront_content')->count(), 'secondary' => Db::name('storefront_content')->where('status', 'published')->count(), 'risk' => Db::name('content_review_requests')->where('status', 'pending')->count(), 'title' => '内容发布质量'],
+            'coupons' => ['total' => Db::name('coupons')->count(), 'secondary' => Db::name('coupon_claims')->count(), 'risk' => Db::name('coupons')->where('status', 'draft')->count(), 'title' => '优惠券运营'],
         ];
 
         if (!isset($definitions[$module])) {
@@ -89,7 +97,7 @@ final class OperationsController extends ApiController
         ]);
     }
 
-    private function panelItems(string $module, array $item): array
+    function panelItems(string $module, array $item): array
     {
         return match ($module) {
             'products' => [
