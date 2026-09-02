@@ -22,4 +22,10 @@ import './styles/topbar-interactions.css'
 import './styles/help-additions.css'
 import './styles/control-focus.css'
 
+document.documentElement.dataset.inputModality = 'pointer'
+document.addEventListener('pointerdown', () => { document.documentElement.dataset.inputModality = 'pointer' }, true)
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Tab') document.documentElement.dataset.inputModality = 'keyboard'
+}, true)
+
 createApp(App).use(router).mount('#app')

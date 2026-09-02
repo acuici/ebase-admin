@@ -9,8 +9,8 @@
 
 :where(input, textarea, select):not([type='checkbox']):not([type='radio']):not([aria-invalid='true']):focus {
   outline: 0;
-  border-color: var(--control-focus-border);
-  box-shadow: 0 0 0 3px var(--control-focus-ring);
+  border-color: var(--border);
+  box-shadow: none;
 }
 
 .global-search:focus-within,
@@ -21,6 +21,19 @@
 .help-popover > label:focus-within,
 .dashboard-period:focus-within,
 .auth-form > label > div:focus-within {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+html[data-input-modality='keyboard'] :where(input, textarea, select):not([type='checkbox']):not([type='radio']):not([aria-invalid='true']):focus,
+html[data-input-modality='keyboard'] .global-search:focus-within,
+html[data-input-modality='keyboard'] .module-search:focus-within,
+html[data-input-modality='keyboard'] .table-search:focus-within,
+html[data-input-modality='keyboard'] .hub-search:focus-within,
+html[data-input-modality='keyboard'] .order-filters > label:focus-within,
+html[data-input-modality='keyboard'] .help-popover > label:focus-within,
+html[data-input-modality='keyboard'] .dashboard-period:focus-within,
+html[data-input-modality='keyboard'] .auth-form > label > div:focus-within {
   border-color: var(--control-focus-border);
   box-shadow: 0 0 0 3px var(--control-focus-ring);
 }
@@ -38,10 +51,10 @@
   box-shadow: none;
 }
 
-.toolbar-select-trigger:focus-visible,
-.date-range-trigger:focus-visible,
-.dashboard-status-trigger:focus-visible,
-.pagination-size-select .toolbar-select-trigger:focus-visible {
+html[data-input-modality='keyboard'] .toolbar-select-trigger:focus,
+html[data-input-modality='keyboard'] .date-range-trigger:focus,
+html[data-input-modality='keyboard'] .dashboard-status-trigger:focus,
+html[data-input-modality='keyboard'] .pagination-size-select .toolbar-select-trigger:focus {
   outline: 0;
   border-color: var(--control-focus-border);
   box-shadow: 0 0 0 3px var(--control-focus-ring);
