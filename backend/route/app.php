@@ -55,6 +55,12 @@ Route::group('api/v1/admin', function () {
     Route::delete('roles/:id', 'RoleController/delete')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.role.delete');
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
+Route::group('api/v1/secondary-operations', function () {
+    Route::post('/:type', 'SecondaryOperationsController/create');
+    Route::put('/:type/:id', 'SecondaryOperationsController/update');
+    Route::delete('/:type/:id', 'SecondaryOperationsController/delete');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+
 // ---- 运营模块聚合读取 ----
 Route::get('api/v1/operations/dashboard', 'OperationsController/dashboard')->middleware(\app\common\middleware\AuthMiddleware::class);
 Route::get('api/v1/operations/:module/stats', 'OperationsController/stats')->middleware(\app\common\middleware\AuthMiddleware::class);

@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { ArrowLeft, Check, ChevronDown, Eye, MoreHorizontal, Pencil, Plus, Search, Trash2, X } from 'lucide-vue-next'
 import { secondaryConfigs } from '../data/secondaryConfigs'
 import { listOperationModule } from '../api/operations'
+import { apiRequest } from '../api/client'
 import TableState from '../components/common/TableState.vue'
 
 const props=defineProps<{type:string}>(); const config=computed(()=>secondaryConfigs[props.type]); const query=ref(''); const activeStage=ref('全部')
@@ -15,7 +16,8 @@ function persist(){}
 function openCreate(){mode.value='create';editingIndex.value=-1;validationError.value='';form.value=config.value.columns.map((_,i)=>i===0?`NEW-${Date.now().toString().slice(-6)}`:i===config.value.columns.length-1?'草稿':'');drawer.value=true}
 function openRow(row:string[],targetMode:'view'|'edit'){mode.value=targetMode;editingIndex.value=localRows.value.indexOf(row);validationError.value='';form.value=[...row];drawer.value=true}
 function startEdit(){mode.value='edit'}
-function save(){notify('该功能正在切换真实 API');}
+function rowPayload(){const columns=config.value.columns;return Object.fromEntries(columns.map((column,index)=>[column,form.value[index]]))}
+async function save(){if(!form.value[0]?.trim()||!form.value[1]?.trim()){validationError.value=`${config.value.columns[0]}和${config.value.columns[1]}为必填项`;return}try{const typeMap:Record<string,string>={segments:'segments',approvals:'approvals',suppliers:'suppliers',warehouses:'warehouses',categories:'categories',refunds:'refunds'};const endpoint=typeMap[props.type];if(!endpoint){notify('该功能暂不支持写入');return}if(mode.value==='create')await apiRequest(`/secondary-operations/${endpoint}`,{method:'POST',body:rowPayload()});else await apiRequest(`/secondary-operations/${endpoint}/${form.value[0]}`,{method:'PUT',body:rowPayload()});notify(mode.value==='create'?'新增记录已保存':'修改已保存');drawer.value=false}catch{notify('保存失败，请检查字段后重试')}}
 function askDelete(row:string[]){deleteIndex.value=localRows.value.indexOf(row)}
 function confirmDelete(){if(deleteIndex.value>=0)localRows.value.splice(deleteIndex.value,1);persist();deleteIndex.value=-1;drawer.value=false;notify('记录已删除')}
 </script>
