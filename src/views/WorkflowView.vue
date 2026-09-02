@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Check, ChevronDown, Clock3, Save } from 'lucide-vue-next'
 import FileUploader from '../components/forms/FileUploader.vue'
 import { useToast } from '../composables/useToast'
+import { getOperationsReport, type ReportData } from '../api/reports'
 
 const props=defineProps<{type:string}>(); const router=useRouter(); const saved=ref(false); const activeSection=ref(0); const {success}=useToast()
 type Field={label:string;value:string;kind?:'input'|'select'|'textarea'|'switch';wide?:boolean}
@@ -33,8 +34,14 @@ marketing:[[f('优惠机制','满 999 减 120','select'),f('会员加码','黑�
 report:[[f('渠道指标','成交额 / 订单 / 转化率','select',true),f('渠道范围','天猫 / 京东 / 抖音 / 小程序','select',true),f('排序方式','按成交额降序','select'),f('异常阈值','同比下降超过 10%')],[f('商品维度','一级类目 / 品牌 / SPU','select'),f('商品指标','成交额 / 毛利 / 库存周转','select',true),f('Top 数量','Top 20'),f('排除范围','已下架商品','select')],[f('用户维度','新老客 / 会员等级 / 地域','select'),f('用户指标','用户数 / 客单价 / 复购率','select',true),f('报表输出','在线报表 + Excel','select'),f('订阅频率','每周一 08:00','select')]],
 settings:[[f('订单权限','查看 / 编辑 / 导出 / 审批','select',true),f('商品权限','查看 / 编辑 / 导出','select',true),f('用户权限','查看 / 编辑','select',true),f('营销权限','查看 / 编辑 / 审批','select',true)],[f('店铺范围','全部店铺','select'),f('渠道范围','全部渠道','select'),f('仓库范围','华东 / 华南仓','select'),f('用户数据脱敏','手机号与地址脱敏','select',true)],[f('角色成员','林知夏、陈曦等 12 人','textarea',true),f('权限生效时间','保存后立即生效','select'),f('变更通知','通知所有角色成员','select'),f('变更原因','根据新组织架构调整运营权限。','textarea',true)]]
 }
-const flow=computed(()=>flows[props.type]); const activeFields=computed(()=>activeSection.value===0?flow.value.fields:extraSteps[props.type][activeSection.value-1]); const isLast=computed(()=>activeSection.value===flow.value.sections.length-1); const formValues=reactive<Record<string,string>>({}); const fieldKey=(field:Field)=>`${activeSection.value}-${field.label}`
+const flow=computed(()=>flows[props.type])
+const reportData=ref<ReportData|null>(null)
+const reportLoading=ref(false)
+async function loadReport(){if(props.type!=='report')return;reportLoading.value=true;try{const result=await getOperationsReport();reportData.value=result;flow.value.summary=[['成交额',`¥${result.summary.revenue}`],['支付订单',String(result.summary.order_count)],['客单价',`¥${result.summary.average_order_value}`],['退款率',`${result.summary.refund_rate}%`]];flow.value.events=result.channels.map(item=>`${displayChannel(item.channel)} · ${item.orders} 单 · ¥${item.revenue}`)}finally{reportLoading.value=false}}
+ const activeFields=computed(()=>activeSection.value===0?flow.value.fields:extraSteps[props.type][activeSection.value-1]); const isLast=computed(()=>activeSection.value===flow.value.sections.length-1); const formValues=reactive<Record<string,string>>({}); const fieldKey=(field:Field)=>`${activeSection.value}-${field.label}`
 watch(activeFields,fields=>fields.forEach(field=>{const key=fieldKey(field);if(!(key in formValues))formValues[key]=field.value}),{immediate:true})
+onMounted(()=>void loadReport())
+function displayChannel(channel:string){return ({storefront:'独立站',tmall:'天猫',jd:'京东',douyin:'抖音',wechat_miniapp:'品牌小程序',unknown:'未知渠道'} as Record<string,string>)[channel]||channel}
 function save(message='修改已保存'){saved.value=true;success(message,`${flow.value.title} · ${flow.value.sections[activeSection.value]}`);setTimeout(()=>saved.value=false,2200)} function saveDraft(){save('草稿已保存')} function next(){save(isLast.value?'流程已完成':'当前步骤已保存');if(!isLast.value)activeSection.value++} function previous(){save('当前步骤已保存');if(activeSection.value>0)activeSection.value--}
 </script>
 
