@@ -25,9 +25,9 @@ final class OperationsController extends ApiController
             'inventory' => fn () => $this->inventory($keyword, $status, $page, $size),
             'customers' => fn () => $this->customers($keyword, $status, $source, $page, $size),
             'logistics' => fn () => $this->logistics($keyword, $status, $carrier, $page, $size),
-            'content' => fn () => $this->content($keyword, $page, $size),
-            'coupons' => fn () => $this->simple('coupons', $keyword, ['code', 'name', 'status'], $page, $size),
-            'campaigns' => fn () => $this->simple('marketing_campaigns', $keyword, ['name', 'campaign_type', 'status'], $page, $size),
+            'content' => fn () => $this->simple('storefront_content', $keyword, $status, ['title', 'content_type', 'status'], $page, $size),
+            'coupons' => fn () => $this->simple('coupons', $keyword, $status, ['code', 'name', 'status'], $page, $size),
+            'campaigns' => fn () => $this->simple('marketing_campaigns', $keyword, $status, ['name', 'campaign_type', 'status'], $page, $size),
         ];
         if (!isset($handlers[$module])) return $this->error('INVALID_MODULE', '不支持的运营模块', 422);
         return $this->success($handlers[$module]());
@@ -72,8 +72,14 @@ final class OperationsController extends ApiController
                 'risk' => Db::name('approval_requests')->where('request_type', 'campaign')->where('status', 'pending')->count(),
                 'title' => '营销审批队列',
             ],
-            'content' => ['total' => Db::name('storefront_content')->count(), 'secondary' => Db::name('storefront_content')->where('status', 'published')->count(), 'risk' => Db::name('content_review_requests')->where('status', 'pending')->count(), 'title' => '内容发布质量'],
-            'coupons' => ['total' => Db::name('coupons')->count(), 'secondary' => Db::name('coupon_claims')->count(), 'risk' => Db::name('coupons')->where('status', 'draft')->count(), 'title' => '优惠券运营'],
+            'content' => [
+                'total' => Db::name('storefront_content')->count(),
+                'secondary' => Db::name('storefront_content')->where('status', 'published')->count(),
+                'risk' => Db::name('content_review_requests')->where('status', 'pending')->count(),
+                'drafts' => Db::name('storefront_content')->where('status', 'draft')->count(),
+                'title' => '内容发布质量',
+            ],
+            'coupons' => ['total' => Db::name('coupons')->count(), 'secondary' => Db::name('coupon_claims')->count(), 'risk' => Db::name('coupons')->where('status', 'draft')->count(), 'active' => Db::name('coupons')->where('status', 'active')->count(), 'title' => '优惠券运营'],
         ];
 
         if (!isset($definitions[$module])) {
@@ -121,8 +127,17 @@ final class OperationsController extends ApiController
                 ['title' => '累计消费', 'meta' => '全量有效订单统计', 'tone' => 'primary'],
                 ['title' => '画像来源', 'meta' => '订单、标签、触达记录', 'tone' => 'success'],
             ],
+'content' => [
+                ['title' => '待审核内容', 'meta' => (string) $item['risk'] . ' 条', 'tone' => 'warning'],
+                ['title' => '已发布内容', 'meta' => (string) $item['secondary'] . ' 条', 'tone' => 'success'],
+                ['title' => '草稿内容', 'meta' => (string) $item['drafts'] . ' 条', 'tone' => 'primary'],
+            ],
+            'coupons' => [
+                ['title' => '进行中优惠券', 'meta' => (string) $item['active'] . ' 张', 'tone' => 'success'],
+                ['title' => '累计领取', 'meta' => (string) $item['secondary'] . ' 张', 'tone' => 'primary'],
+                ['title' => '草稿优惠券', 'meta' => (string) $item['risk'] . ' 张', 'tone' => 'warning'],
+            ],
             'logistics' => [
-                ['title' => '物流异常待处理', 'meta' => (string) $item['risk'] . ' 个包裹', 'tone' => 'danger'],
                 ['title' => '物流轨迹', 'meta' => (string) $item['secondary'] . ' 条事件', 'tone' => 'primary'],
                 ['title' => '异常通知', 'meta' => '异常创建后发送通知中心', 'tone' => 'success'],
             ],
@@ -194,10 +209,11 @@ final class OperationsController extends ApiController
         return $this->result($query, $page, $size);
     }
 
-    private function simple(string $table, string $keyword, array $columns, int $page, int $size): array
+    private function simple(string $table, string $keyword, string $status, array $columns, int $page, int $size): array
     {
         $query = Db::name($table);
         if ($keyword) $query->whereLike(implode('|', $columns), '%' . addcslashes($keyword, '%_') . '%');
+        if ($status) $query->where('status', $status);
         return $this->result($query, $page, $size);
     }
 
