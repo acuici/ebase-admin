@@ -39,7 +39,10 @@ final class OperationsController extends ApiController
             'products' => [
                 'total' => Db::name('products')->count(),
                 'secondary' => Db::name('product_skus')->count(),
-                'risk' => Db::query('SELECT COUNT(*) AS total FROM products p WHERE NOT EXISTS (SELECT 1 FROM product_skus s WHERE s.product_id = p.id)')[0]['total'],
+                'risk' => Db::query('SELECT COUNT(*) AS total FROM products p WHERE NOT EXISTS (SELECT 1 FROM asset_relations r WHERE r.relation_type = "product" AND r.relation_id = p.id)')[0]['total'],
+                'short_description' => Db::query('SELECT COUNT(*) AS total FROM products WHERE CHAR_LENGTH(COALESCE(description, "")) < 30')[0]['total'],
+                'unmapped' => Db::query('SELECT COUNT(*) AS total FROM products p WHERE NOT EXISTS (SELECT 1 FROM storefront_product_listings l WHERE l.product_id = p.id)')[0]['total'],
+                'optimized' => Db::name('product_quality_reports')->where('checked_at', '>=', date('Y-m-d 00:00:00', strtotime('monday this week')))->count(),
                 'title' => '商品资料质量',
             ],
             'inventory' => [
@@ -81,14 +84,39 @@ final class OperationsController extends ApiController
                 'score_label' => '当前健康度',
                 'score' => $item['total'] > 0 ? '实时' : '暂无数据',
                 'score_width' => $item['total'] > 0 ? 100 : 0,
-                'items' => [
-                    ['title' => '待处理事项', 'meta' => (string) $item['risk'], 'tone' => $item['risk'] > 0 ? 'warning' : 'success'],
-                    ['title' => '业务总量', 'meta' => (string) $item['total'], 'tone' => 'primary'],
-                    ['title' => '统计范围', 'meta' => '未受 Tab、搜索、分页影响', 'tone' => 'success'],
-                ],
+                'items' => $this->panelItems($module, $item),
             ],
         ]);
     }
+
+    private function panelItems(string $module, array $item): array
+    {
+        return match ($module) {
+            'products' => [
+                ['title' => '缺少商品主图', 'meta' => (string) $item['risk'] . ' 个商品', 'tone' => 'danger'],
+                ['title' => '卖点描述较短', 'meta' => (string) $item['short_description'] . ' 个商品', 'tone' => 'warning'],
+                ['title' => '渠道属性待映射', 'meta' => (string) $item['unmapped'] . ' 个商品', 'tone' => 'warning'],
+                ['title' => '本周完成优化', 'meta' => (string) $item['optimized'] . ' 个商品', 'tone' => 'success'],
+            ],
+            'inventory' => [
+                ['title' => '低库存 SKU', 'meta' => (string) $item['risk'] . ' 个需要补货', 'tone' => 'warning'],
+                ['title' => '库存总量', 'meta' => (string) $item['secondary'] . ' 件现货', 'tone' => 'primary'],
+                ['title' => '补货依据', 'meta' => '销量、库存与周转天数', 'tone' => 'success'],
+            ],
+            'customers' => [
+                ['title' => '未打标签用户', 'meta' => (string) $item['risk'] . ' 个需要画像完善', 'tone' => 'warning'],
+                ['title' => '累计消费', 'meta' => '全量有效订单统计', 'tone' => 'primary'],
+                ['title' => '画像来源', 'meta' => '订单、标签、触达记录', 'tone' => 'success'],
+            ],
+            'logistics' => [
+                ['title' => '物流异常待处理', 'meta' => (string) $item['risk'] . ' 个包裹', 'tone' => 'danger'],
+                ['title' => '物流轨迹', 'meta' => (string) $item['secondary'] . ' 条事件', 'tone' => 'primary'],
+                ['title' => '异常通知', 'meta' => '异常创建后发送通知中心', 'tone' => 'success'],
+            ],
+            default => [],
+        };
+    }
+
 
     public function dashboard(): Response
     {
