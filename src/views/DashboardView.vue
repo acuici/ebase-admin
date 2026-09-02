@@ -33,13 +33,13 @@ async function loadDashboard(){try{dashboardStats.value=await getDashboardStats(
 onMounted(()=>void loadDashboard())
 
 const metrics = computed(() => [
-  { label: '商品数', value: formatMetric(dashboardStats.value?.products), delta: '', note: '数据库真实数据' },
-  { label: 'SKU 数', value: formatMetric(dashboardStats.value?.skus), delta: '', note: '数据库真实数据' },
-  { label: '消费者', value: formatMetric(dashboardStats.value?.customers), delta: '', note: '数据库真实数据' },
-  { label: '订单数', value: formatMetric(dashboardStats.value?.orders), delta: '', note: '数据库真实数据' },
-  { label: '待处理订单', value: formatMetric(dashboardStats.value?.pending_orders), delta: '', note: '数据库真实数据' },
+  { label: '今日成交额', value: `¥${formatMetric(dashboardStats.value?.today_revenue, 2)}`, delta: '', note: '数据库真实数据' },
+  { label: '支付订单', value: formatMetric(dashboardStats.value?.paid_orders), delta: '', note: '数据库真实数据' },
+  { label: '客单价', value: `¥${formatMetric(dashboardStats.value?.average_order_value, 2)}`, delta: '', note: '数据库真实数据' },
+  { label: '退款率', value: `${formatMetric(dashboardStats.value?.refund_rate, 2)}%`, delta: '', note: '数据库真实数据' },
+  { label: '待发货', value: formatMetric(dashboardStats.value?.pending_shipment_orders), delta: '', note: '数据库真实数据' },
 ])
-function formatMetric(value: number | undefined): string { return value === undefined ? '—' : value.toLocaleString('zh-CN') }
+function formatMetric(value: number | string | undefined, decimals = 0): string { const numeric = Number(value); return Number.isFinite(numeric) ? numeric.toLocaleString('zh-CN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : '—' }
 
 
 const todos = [
