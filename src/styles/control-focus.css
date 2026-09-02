@@ -3,13 +3,12 @@
  * 默认使用中性边框和柔和灰环；错误、成功等语义状态由组件自身覆盖。
  */
 :root {
-  --control-focus-border: #98a2b3;
-  --control-focus-ring: rgba(152, 162, 179, .2);
+  --control-focus-border: var(--primary);
 }
 
 :where(input, textarea, select):not([type='checkbox']):not([type='radio']):not([aria-invalid='true']):focus {
   outline: 0;
-  border-color: var(--border);
+  border-color: var(--control-focus-border);
   box-shadow: none;
 }
 
@@ -21,7 +20,7 @@
 .help-popover > label:focus-within,
 .dashboard-period:focus-within,
 .auth-form > label > div:focus-within {
-  border-color: var(--border);
+  border-color: var(--control-focus-border);
   box-shadow: none;
 }
 
@@ -35,7 +34,7 @@ html[data-input-modality='keyboard'] .help-popover > label:focus-within,
 html[data-input-modality='keyboard'] .dashboard-period:focus-within,
 html[data-input-modality='keyboard'] .auth-form > label > div:focus-within {
   border-color: var(--control-focus-border);
-  box-shadow: 0 0 0 3px var(--control-focus-ring);
+  box-shadow: none;
 }
 
 /* 复合控件只允许外层容器绘制边界；内部原生控件在任何状态都不能形成第二层框。 */
@@ -62,7 +61,7 @@ html[data-input-modality='keyboard'] .dashboard-status-trigger:focus,
 html[data-input-modality='keyboard'] .pagination-size-select .toolbar-select-trigger:focus {
   outline: 0;
   border-color: var(--control-focus-border);
-  box-shadow: 0 0 0 3px var(--control-focus-ring);
+  box-shadow: none;
 }
 
 /* 鼠标点击只保持中性控件边框，不显示品牌色强调。 */
@@ -71,7 +70,7 @@ html[data-input-modality='keyboard'] .pagination-size-select .toolbar-select-tri
 .dashboard-status-trigger:focus:not(:focus-visible),
 .table-footer button:focus:not(:focus-visible) {
   outline: 0;
-  border-color: var(--border);
+  border-color: var(--control-focus-border);
   box-shadow: none;
 }
 

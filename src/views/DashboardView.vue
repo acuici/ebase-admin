@@ -23,7 +23,7 @@ const previous30 = points30.map((value,index)=>Math.max(28,value-6-(index%4)))
 const chartPoints = computed(()=>range.value==='14d'?points:points30)
 const chartPrevious = computed(()=>range.value==='14d'?previous:previous30)
 const hoveredPoint = ref<number|null>(null)
-const chartBounds = { left: 10, right: 690, top: 24, bottom: 184 }
+const chartBounds = { left: 0, right: 700, top: 8, bottom: 182 }
 const chartDates = computed(() => chartPoints.value.map((_, index) => {
   const date = new Date(2026, 8, 1)
   date.setDate(date.getDate() - (chartPoints.value.length - 1 - index))
@@ -147,16 +147,16 @@ function clearOrderFilters(){orderQuery.value='';orderStatus.value='全部状态
           <div class="segmented"><button :class="{ active: range === '14d' }" @click="setChartRange('14d')">14 天</button><button :class="{ active: range === '30d' }" @click="setChartRange('30d')">30 天</button></div>
         </header>
         <div class="chart-wrap" @pointerleave="hoveredPoint=null">
-          <svg viewBox="0 0 700 220" role="img" tabindex="0" :aria-label="activePoint?`${activePoint.date}，本期 ${formatChartAmount(activePoint.current)}，同期 ${formatChartAmount(activePoint.previous)}`:`${range==='14d'?'14':'30'} 天成交趋势图，使用左右方向键查看每日数据`" @focus="focusChart" @keydown.left.prevent="moveChartPoint(-1)" @keydown.right.prevent="moveChartPoint(1)" @pointermove="inspectChart">
+          <svg viewBox="0 0 700 190" preserveAspectRatio="none" role="img" tabindex="0" :aria-label="activePoint?`${activePoint.date}，本期 ${formatChartAmount(activePoint.current)}，同期 ${formatChartAmount(activePoint.previous)}`:`${range==='14d'?'14':'30'} 天成交趋势图，使用左右方向键查看每日数据`" @focus="focusChart" @keydown.left.prevent="moveChartPoint(-1)" @keydown.right.prevent="moveChartPoint(1)" @pointermove="inspectChart">
             <defs><linearGradient id="trend-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b5bd6" stop-opacity=".18"/><stop offset="1" stop-color="#5b5bd6" stop-opacity="0"/></linearGradient></defs>
-            <g class="chart-grid"><line v-for="y in [24, 64, 104, 144, 184]" :key="y" :x1="chartBounds.left" :y1="y" :x2="chartBounds.right" :y2="y" /></g>
+            <g class="chart-grid"><line v-for="y in [8, 51.5, 95, 138.5, 182]" :key="y" :x1="chartBounds.left" :y1="y" :x2="chartBounds.right" :y2="y" /></g>
             <path class="chart-area" :d="areaPath" />
             <path class="previous-line" :d="previousPath" />
             <path class="current-line" :d="currentPath" />
             <g v-if="activePoint" class="chart-active"><line :x1="activePoint.x" :x2="activePoint.x" :y1="chartBounds.top" :y2="chartBounds.bottom"/><circle :cx="activePoint.x" :cy="activePoint.y" r="5"/></g>
-            <g class="chart-labels"><text v-for="index in labelIndexes" :key="index" :x="chartX(index)" y="211" :text-anchor="index===0?'start':index===chartPoints.length-1?'end':'middle'">{{chartDates[index]}}</text></g>
             <rect class="chart-hit-area" :x="chartBounds.left" :y="chartBounds.top" :width="chartBounds.right-chartBounds.left" :height="chartBounds.bottom-chartBounds.top"/>
           </svg>
+          <div class="chart-labels" aria-hidden="true"><span v-for="index in labelIndexes" :key="index">{{chartDates[index]}}</span></div>
           <div v-if="activePoint" class="chart-tooltip" :class="{flip:activePoint.x>540}" :style="{left:`${activePoint.x/7}%`,top:`${Math.max(8,activePoint.y/2.2-8)}%`}"><strong>{{activePoint.date}}</strong><span><i></i>本期 <b>{{formatChartAmount(activePoint.current)}}</b></span><span><i></i>同期 <b>{{formatChartAmount(activePoint.previous)}}</b></span></div>
         </div>
       </article>
