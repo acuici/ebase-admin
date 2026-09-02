@@ -41,7 +41,9 @@ async function loadReport(){if(props.type!=='report')return;reportLoading.value=
  const activeFields=computed(()=>activeSection.value===0?flow.value.fields:extraSteps[props.type][activeSection.value-1]); const isLast=computed(()=>activeSection.value===flow.value.sections.length-1); const formValues=reactive<Record<string,string>>({}); const fieldKey=(field:Field)=>`${activeSection.value}-${field.label}`
 watch(activeFields,fields=>fields.forEach(field=>{const key=fieldKey(field);if(!(key in formValues))formValues[key]=field.value}),{immediate:true})
 onMounted(()=>void loadReport())
-function displayChannel(channel:string){return ({storefront:'独立站',tmall:'天猫',jd:'京东',douyin:'抖音',wechat_miniapp:'品牌小程序',unknown:'未知渠道'} as Record<string,string>)[channel]||channel}
+function displayChannel(channel: string): string {
+  return ({ storefront: '独立站', tmall: '天猫', jd: '京东', douyin: '抖音', wechat_miniapp: '品牌小程序', unknown: '未知渠道' } as Record<string, string>)[channel] || channel
+}
 function save(message='修改已保存'){saved.value=true;success(message,`${flow.value.title} · ${flow.value.sections[activeSection.value]}`);setTimeout(()=>saved.value=false,2200)} function saveDraft(){save('草稿已保存')} function next(){save(isLast.value?'流程已完成':'当前步骤已保存');if(!isLast.value)activeSection.value++} function previous(){save('当前步骤已保存');if(activeSection.value>0)activeSection.value--}
 </script>
 
