@@ -49,12 +49,15 @@ final class OperationsController extends ApiController
                 'total' => Db::name('product_skus')->count(),
                 'secondary' => Db::query('SELECT COALESCE(SUM(stock_quantity), 0) AS total FROM product_skus')[0]['total'],
                 'risk' => Db::query('SELECT COUNT(*) AS total FROM product_skus WHERE stock_quantity - reserved_quantity <= 20')[0]['total'],
+                'out_of_stock' => Db::query('SELECT COUNT(*) AS total FROM product_skus WHERE stock_quantity - reserved_quantity <= 0')[0]['total'],
+                'low_stock' => Db::query('SELECT COUNT(*) AS total FROM product_skus WHERE stock_quantity - reserved_quantity BETWEEN 1 AND 20')[0]['total'],
                 'title' => '智能补货建议',
             ],
             'customers' => [
                 'total' => Db::name('customers')->count(),
                 'secondary' => Db::query('SELECT COALESCE(SUM(total_amount), 0) AS total FROM orders WHERE customer_id IS NOT NULL AND status <> "cancelled"')[0]['total'],
                 'risk' => Db::query('SELECT COUNT(*) AS total FROM customers c WHERE NOT EXISTS (SELECT 1 FROM customer_tag_relations r WHERE r.customer_id = c.id)')[0]['total'],
+                'high_value' => Db::query('SELECT COUNT(*) AS total FROM customers c WHERE (SELECT COALESCE(SUM(o.total_amount),0) FROM orders o WHERE o.customer_id=c.id AND o.status <> "cancelled") >= 5000')[0]['total'],
                 'title' => '用户画像',
             ],
             'logistics' => [
@@ -107,12 +110,14 @@ final class OperationsController extends ApiController
                 ['title' => '本周完成优化', 'meta' => (string) $item['optimized'] . ' 个商品', 'tone' => 'success'],
             ],
             'inventory' => [
-                ['title' => '低库存 SKU', 'meta' => (string) $item['risk'] . ' 个需要补货', 'tone' => 'warning'],
+                ['title' => '缺货 SKU', 'meta' => (string) $item['out_of_stock'] . ' 个', 'tone' => 'danger'],
+                ['title' => '低库存 SKU', 'meta' => (string) $item['low_stock'] . ' 个', 'tone' => 'warning'],
                 ['title' => '库存总量', 'meta' => (string) $item['secondary'] . ' 件现货', 'tone' => 'primary'],
                 ['title' => '补货依据', 'meta' => '销量、库存与周转天数', 'tone' => 'success'],
             ],
             'customers' => [
                 ['title' => '未打标签用户', 'meta' => (string) $item['risk'] . ' 个需要画像完善', 'tone' => 'warning'],
+                ['title' => '高价值用户', 'meta' => (string) $item['high_value'] . ' 个', 'tone' => 'primary'],
                 ['title' => '累计消费', 'meta' => '全量有效订单统计', 'tone' => 'primary'],
                 ['title' => '画像来源', 'meta' => '订单、标签、触达记录', 'tone' => 'success'],
             ],
