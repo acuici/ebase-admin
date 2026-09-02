@@ -33,6 +33,63 @@ final class OperationsController extends ApiController
         return $this->success($handlers[$module]());
     }
 
+    public function stats(string $module): Response
+    {
+        $definitions = [
+            'products' => [
+                'total' => Db::name('products')->count(),
+                'secondary' => Db::name('product_skus')->count(),
+                'risk' => Db::query('SELECT COUNT(*) AS total FROM products p WHERE NOT EXISTS (SELECT 1 FROM product_skus s WHERE s.product_id = p.id)')[0]['total'],
+                'title' => '商品资料质量',
+            ],
+            'inventory' => [
+                'total' => Db::name('product_skus')->count(),
+                'secondary' => Db::query('SELECT COALESCE(SUM(stock_quantity), 0) AS total FROM product_skus')[0]['total'],
+                'risk' => Db::query('SELECT COUNT(*) AS total FROM product_skus WHERE stock_quantity - reserved_quantity <= 20')[0]['total'],
+                'title' => '智能补货建议',
+            ],
+            'customers' => [
+                'total' => Db::name('customers')->count(),
+                'secondary' => Db::query('SELECT COALESCE(SUM(total_amount), 0) AS total FROM orders WHERE customer_id IS NOT NULL AND status <> "cancelled"')[0]['total'],
+                'risk' => Db::query('SELECT COUNT(*) AS total FROM customers c WHERE NOT EXISTS (SELECT 1 FROM customer_tag_relations r WHERE r.customer_id = c.id)')[0]['total'],
+                'title' => '用户画像',
+            ],
+            'logistics' => [
+                'total' => Db::name('shipment_packages')->count(),
+                'secondary' => Db::name('shipment_tracking_events')->count(),
+                'risk' => Db::name('logistics_exceptions')->whereIn('status', ['open', 'processing'])->count(),
+                'title' => '物流异常队列',
+            ],
+        ];
+
+        if (!isset($definitions[$module])) {
+            return $this->error('INVALID_MODULE', '该模块没有独立统计接口', 422);
+        }
+
+        $item = $definitions[$module];
+        return $this->success([
+            'metrics' => [
+                ['label' => '总量', 'value' => $item['total'], 'note' => '全量数据库数据'],
+                ['label' => '业务指标', 'value' => $item['secondary'], 'note' => '独立聚合统计'],
+                ['label' => '待处理', 'value' => $item['risk'], 'note' => '风险数据'],
+                ['label' => '数据更新时间', 'value' => date('Y-m-d H:i:s'), 'note' => '实时查询'],
+            ],
+            'panel' => [
+                'eyebrow' => 'REALTIME INSIGHT',
+                'title' => $item['title'],
+                'description' => '独立于列表筛选的全量统计',
+                'score_label' => '当前健康度',
+                'score' => $item['total'] > 0 ? '实时' : '暂无数据',
+                'score_width' => $item['total'] > 0 ? 100 : 0,
+                'items' => [
+                    ['title' => '待处理事项', 'meta' => (string) $item['risk'], 'tone' => $item['risk'] > 0 ? 'warning' : 'success'],
+                    ['title' => '业务总量', 'meta' => (string) $item['total'], 'tone' => 'primary'],
+                    ['title' => '统计范围', 'meta' => '未受 Tab、搜索、分页影响', 'tone' => 'success'],
+                ],
+            ],
+        ]);
+    }
+
     public function dashboard(): Response
     {
         return $this->success([

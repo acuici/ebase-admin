@@ -57,6 +57,7 @@ Route::group('api/v1/admin', function () {
 
 // ---- 运营模块聚合读取 ----
 Route::get('api/v1/operations/dashboard', 'OperationsController/dashboard')->middleware(\app\common\middleware\AuthMiddleware::class);
+Route::get('api/v1/operations/:module/stats', 'OperationsController/stats')->middleware(\app\common\middleware\AuthMiddleware::class);
 Route::get('api/v1/operations/:module', 'OperationsController/module')->middleware(\app\common\middleware\AuthMiddleware::class);
 
 // ---- 系统设置 ----
