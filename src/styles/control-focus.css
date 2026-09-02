@@ -38,17 +38,22 @@ html[data-input-modality='keyboard'] .auth-form > label > div:focus-within {
   box-shadow: 0 0 0 3px var(--control-focus-ring);
 }
 
-.global-search input:focus,
-.module-search input:focus,
-.table-search input:focus,
-.hub-search input:focus,
-.order-filters > label input:focus,
-.help-popover > label input:focus,
-.dashboard-period select:focus,
-.auth-form input:focus,
-.command-dialog > header input:focus {
-  border-color: transparent;
-  box-shadow: none;
+/* 复合控件只允许外层容器绘制边界；内部原生控件在任何状态都不能形成第二层框。 */
+:where(
+  .global-search,
+  .module-search,
+  .table-search,
+  .hub-search,
+  .order-filters > label,
+  .help-popover > label,
+  .auth-form > label > div,
+  .command-dialog > header
+) > input,
+.dashboard-period > select {
+  appearance: none;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
 }
 
 html[data-input-modality='keyboard'] .toolbar-select-trigger:focus,
