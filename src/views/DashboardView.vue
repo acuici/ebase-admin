@@ -22,10 +22,41 @@ const points30 = [34,38,41,39,45,43,48,52,49,55,58,54,61,59,64,67,63,70,68,74,71
 const previous30 = points30.map((value,index)=>Math.max(28,value-6-(index%4)))
 const chartPoints = computed(()=>range.value==='14d'?points:points30)
 const chartPrevious = computed(()=>range.value==='14d'?previous:previous30)
-const linePath = (data: number[]) => data.map((value, index) => `${index ? 'L' : 'M'} ${24 + index * (624/Math.max(1,data.length-1))} ${200 - value * 1.55}`).join(' ')
-const currentPath = computed(() => linePath(chartPoints.value))
-const previousPath = computed(() => linePath(chartPrevious.value))
-const chartEndY = computed(()=>200-chartPoints.value.at(-1)!*1.55)
+const hoveredPoint = ref<number|null>(null)
+const chartBounds = { left: 10, right: 690, top: 24, bottom: 184 }
+const chartDates = computed(() => chartPoints.value.map((_, index) => {
+  const date = new Date(2026, 8, 1)
+  date.setDate(date.getDate() - (chartPoints.value.length - 1 - index))
+  return `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}))
+const chartDomain = computed(() => {
+  const values = [...chartPoints.value, ...chartPrevious.value]
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const padding = Math.max(6, (max - min) * .18)
+  return { min: min - padding, max: max + padding }
+})
+const chartX = (index:number) => chartBounds.left + index * ((chartBounds.right - chartBounds.left) / Math.max(1, chartPoints.value.length - 1))
+const chartY = (value:number) => chartBounds.bottom - ((value - chartDomain.value.min) / Math.max(1, chartDomain.value.max - chartDomain.value.min)) * (chartBounds.bottom - chartBounds.top)
+function smoothPath(data:number[]) {
+  const coords = data.map((value,index)=>[chartX(index),chartY(value)] as const)
+  if (coords.length < 2) return ''
+  return coords.slice(1).reduce((path,point,index) => {
+    const previousPoint = coords[index]
+    const controlX = (previousPoint[0] + point[0]) / 2
+    return `${path} C ${controlX} ${previousPoint[1]}, ${controlX} ${point[1]}, ${point[0]} ${point[1]}`
+  }, `M ${coords[0][0]} ${coords[0][1]}`)
+}
+const currentPath = computed(() => smoothPath(chartPoints.value))
+const previousPath = computed(() => smoothPath(chartPrevious.value))
+const areaPath = computed(() => `${currentPath.value} L ${chartBounds.right} ${chartBounds.bottom} L ${chartBounds.left} ${chartBounds.bottom} Z`)
+const labelIndexes = computed(() => Array.from(new Set([0,Math.round((chartPoints.value.length-1)*.25),Math.round((chartPoints.value.length-1)*.5),Math.round((chartPoints.value.length-1)*.75),chartPoints.value.length-1])))
+const activePoint = computed(() => hoveredPoint.value===null?null:{index:hoveredPoint.value,x:chartX(hoveredPoint.value),y:chartY(chartPoints.value[hoveredPoint.value]),current:chartPoints.value[hoveredPoint.value],previous:chartPrevious.value[hoveredPoint.value],date:chartDates.value[hoveredPoint.value]})
+function inspectChart(event:PointerEvent){const rect=(event.currentTarget as SVGElement).getBoundingClientRect();const relative=((event.clientX-rect.left)/rect.width)*700;hoveredPoint.value=Math.max(0,Math.min(chartPoints.value.length-1,Math.round((relative-chartBounds.left)/(chartBounds.right-chartBounds.left)*(chartPoints.value.length-1))))}
+function setChartRange(value:'14d'|'30d'){range.value=value;hoveredPoint.value=null}
+function focusChart(){if(hoveredPoint.value===null)hoveredPoint.value=chartPoints.value.length-1}
+function moveChartPoint(direction:number){focusChart();hoveredPoint.value=Math.max(0,Math.min(chartPoints.value.length-1,(hoveredPoint.value??0)+direction))}
+function formatChartAmount(value:number){return `¥${(value*42000).toLocaleString('zh-CN')}`}
 
 const dashboardStats=ref<DashboardStats|null>(null)
 const loading=ref(true)
@@ -113,16 +144,20 @@ function clearOrderFilters(){orderQuery.value='';orderStatus.value='全部状态
       <article class="surface trend-card">
         <header class="card-heading">
           <div><h2>成交趋势</h2><p>本期成交额 <b>¥3,864,290</b> · 同比 <em>+12.6%</em></p></div>
-          <div class="segmented"><button :class="{ active: range === '14d' }" @click="range = '14d'">14 天</button><button :class="{ active: range === '30d' }" @click="range = '30d'">30 天</button></div>
+          <div class="segmented"><button :class="{ active: range === '14d' }" @click="setChartRange('14d')">14 天</button><button :class="{ active: range === '30d' }" @click="setChartRange('30d')">30 天</button></div>
         </header>
-        <div class="chart-wrap">
-          <svg viewBox="0 0 680 220" role="img" :aria-label="`${range==='14d'?'14':'30'} 天成交趋势折线图`">
-            <g class="chart-grid"><line v-for="y in [40, 80, 120, 160, 200]" :key="y" x1="24" :y1="y" x2="648" :y2="y" /></g>
+        <div class="chart-wrap" @pointerleave="hoveredPoint=null">
+          <svg viewBox="0 0 700 220" role="img" tabindex="0" :aria-label="activePoint?`${activePoint.date}，本期 ${formatChartAmount(activePoint.current)}，同期 ${formatChartAmount(activePoint.previous)}`:`${range==='14d'?'14':'30'} 天成交趋势图，使用左右方向键查看每日数据`" @focus="focusChart" @keydown.left.prevent="moveChartPoint(-1)" @keydown.right.prevent="moveChartPoint(1)" @pointermove="inspectChart">
+            <defs><linearGradient id="trend-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b5bd6" stop-opacity=".18"/><stop offset="1" stop-color="#5b5bd6" stop-opacity="0"/></linearGradient></defs>
+            <g class="chart-grid"><line v-for="y in [24, 64, 104, 144, 184]" :key="y" :x1="chartBounds.left" :y1="y" :x2="chartBounds.right" :y2="y" /></g>
+            <path class="chart-area" :d="areaPath" />
             <path class="previous-line" :d="previousPath" />
             <path class="current-line" :d="currentPath" />
-            <circle cx="648" :cy="chartEndY" r="5" class="chart-point" />
-            <g class="chart-labels"><text x="24" y="216">{{range==='14d'?'08-19':'08-03'}}</text><text x="168" y="216">{{range==='14d'?'08-22':'08-10'}}</text><text x="312" y="216">{{range==='14d'?'08-25':'08-17'}}</text><text x="456" y="216">{{range==='14d'?'08-28':'08-24'}}</text><text x="618" y="216">09-01</text></g>
+            <g v-if="activePoint" class="chart-active"><line :x1="activePoint.x" :x2="activePoint.x" :y1="chartBounds.top" :y2="chartBounds.bottom"/><circle :cx="activePoint.x" :cy="activePoint.y" r="5"/></g>
+            <g class="chart-labels"><text v-for="index in labelIndexes" :key="index" :x="chartX(index)" y="211" :text-anchor="index===0?'start':index===chartPoints.length-1?'end':'middle'">{{chartDates[index]}}</text></g>
+            <rect class="chart-hit-area" :x="chartBounds.left" :y="chartBounds.top" :width="chartBounds.right-chartBounds.left" :height="chartBounds.bottom-chartBounds.top"/>
           </svg>
+          <div v-if="activePoint" class="chart-tooltip" :class="{flip:activePoint.x>540}" :style="{left:`${activePoint.x/7}%`,top:`${Math.max(8,activePoint.y/2.2-8)}%`}"><strong>{{activePoint.date}}</strong><span><i></i>本期 <b>{{formatChartAmount(activePoint.current)}}</b></span><span><i></i>同期 <b>{{formatChartAmount(activePoint.previous)}}</b></span></div>
         </div>
       </article>
 
