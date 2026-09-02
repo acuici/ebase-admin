@@ -27,8 +27,10 @@ const selectedOrderId=ref(''); const selectedOrderDetail=ref<OrderDetail|null>(n
 const isOrders=computed(()=>props.title==='订单管理')
 const orderTabs=[{label:'全部订单',status:''},{label:'待付款',status:'pending_payment'},{label:'待发货',status:'paid'},{label:'处理中',status:'processing'},{label:'运输中',status:'shipped'},{label:'已完成',status:'completed'},{label:'已取消',status:'cancelled'}]
 const orderTabCounts=ref<Record<string,number>>({})
-const currentTabs=computed(()=>isOrders.value?orderTabs.map(item=>item.label):config.value.tabs)
-const currentTabCounts=computed(()=>{if(isOrders.value)return orderTabs.map(item=>orderTabCounts.value[item.status]??0);if(moduleKey[props.title])return config.value.tabCounts.map((count,index)=>index===0?moduleTotal.value:count);return config.value.tabCounts})
+const moduleTabOptions:Record<string,Array<{label:string;status?:string}>>={products:[{label:'全部商品'},{label:'在售',status:'active'},{label:'草稿',status:'draft'},{label:'已归档',status:'archived'}],inventory:[{label:'全部库存'},{label:'可售',status:'active'},{label:'低库存',status:'low_stock'},{label:'缺货',status:'out_of_stock'}],customers:[{label:'全部用户'},{label:'正常',status:'active'},{label:'已停用',status:'disabled'}],logistics:[{label:'全部运单'},{label:'运输中',status:'shipped'},{label:'已签收',status:'delivered'}]}
+const moduleTabCounts=ref<Record<string,number[]>>({})
+const currentTabs=computed(()=>isOrders.value?orderTabs.map(item=>item.label):moduleTabOptions[moduleKey[props.title]]?.map(item=>item.label)||config.value.tabs)
+const currentTabCounts=computed(()=>{if(isOrders.value)return orderTabs.map(item=>orderTabCounts.value[item.status]??0);if(moduleKey[props.title])return moduleTabCounts.value[moduleKey[props.title]]||[];return config.value.tabCounts})
 const activeOrderStatus=computed(()=>isOrders.value?orderTabs[activeTab.value]?.status||'':'')
 function formatCount(value: string | number | undefined): string {
   const numeric = Number(String(value ?? '').replace(/,/g, ''))
@@ -43,7 +45,10 @@ const moduleTotal=ref(0)
 const modulePages=ref(1)
 const moduleKey:Record<string,string>={'产品管理':'products','库存中心':'inventory','用户管理':'customers','物流履约':'logistics','内容中心':'content','优惠券管理':'coupons','营销活动':'campaigns'}
 const moduleColumns:Record<string,string[]>={'products':['product_no','name','brand','min_price','sku_count','available_stock','published_channels','status'],'inventory':['sku_code','product_name','sku_name','stock_quantity','reserved_quantity','available_stock','price','status'],'customers':['customer_no','name','tags','source_channel','order_count','total_spend','last_order_at'],'logistics':['package_no','tracking_no','carrier_code','order_id','status','exception_type','severity','description'],'content':['id','title','content_type','slug','status','published_at','updated_at'],'coupons':['code','name','discount_type','discount_value','min_amount','total_quantity','claimed_quantity','status'],'campaigns':['id','name','campaign_type','budget','status','starts_at','ends_at']}
-async function loadModuleRows(){if(isOrders.value||!moduleKey[props.title])return;loading.value=true;loadError.value='';selected.value=[];try{const data=await listOperationModule(moduleKey[props.title],{page:page.value,page_size:pageSize,keyword:query.value});remoteRows.value=data.items;moduleTotal.value=data.pagination.total;modulePages.value=Math.max(1,data.pagination.pages)}catch(e){loadError.value=e instanceof ApiError?e.body.message:'数据加载失败';remoteRows.value=[]}finally{loading.value=false}}
+const activeModuleStatus=computed(()=>moduleTabOptions[moduleKey[props.title]]?.[activeTab.value]?.status||'')
+const moduleFilters=computed(()=>({products:{status:activeModuleStatus.value,category:filterValues['类目']&&filterValues['类目']!=='全部类目'?filterValues['类目']:''},inventory:{status:activeModuleStatus.value},customers:{status:activeModuleStatus.value,source_channel:filterValues['来源渠道']&&filterValues['来源渠道']!=='全部来源'?filterValues['来源渠道']:''},logistics:{status:activeModuleStatus.value,carrier_code:filterValues['承运商']&&filterValues['承运商']!=='全部承运商'?filterValues['承运商']:''}}[moduleKey[props.title]]||{}))
+async function loadModuleRows(){if(isOrders.value||!moduleKey[props.title])return;loading.value=true;loadError.value='';try{const data=await listOperationModule(moduleKey[props.title],{page:page.value,page_size:pageSize,keyword:query.value,...moduleFilters.value});remoteRows.value=data.items;moduleTotal.value=data.pagination.total;modulePages.value=Math.max(1,data.pagination.pages)}catch(e){loadError.value=e instanceof ApiError?e.body.message:'数据加载失败';remoteRows.value=[]}finally{loading.value=false}}
+async function loadModuleTabCounts(){const key=moduleKey[props.title];const options=moduleTabOptions[key];if(!options)return;try{const counts=await Promise.all(options.map(item=>listOperationModule(key,{page:1,page_size:1,status:item.status})));moduleTabCounts.value[key]=counts.map(result=>result.pagination.total)}catch{moduleTabCounts.value[key]=[]}}
 function displayStatus(value: unknown): string { return ({ active: '在售', draft: '草稿', archived: '已归档', pending: '待处理', processing: '处理中', shipped: '运输中', delivered: '已签收', open: '异常待处理', disabled: '已停用' } as Record<string, string>)[String(value)] || String(value ?? '—') }
 function customerTier(value: unknown): string { const amount=Number(value||0); return amount>=50000?'黑金会员':amount>=20000?'金卡会员':amount>=5000?'银卡会员':'普通会员' }
 function moduleRow(item: Record<string, unknown>): string[] {
@@ -67,7 +72,7 @@ function toggleAll(){selected.value=allSelected.value?[]:rows.value.map((_,i)=>i
 function openOrder(order:Order){router.push(`/orders/${order.id}`)}
 function exportData(){info('导出任务未创建','当前后端尚未提供订单导出接口。')}
 function changeReportDates(value:DateRangeValue){info('报表周期已更新',`${value.start} 至 ${value.end}`)}
-function toolbarOptions(label:string):ToolbarSelectOption[]{let values=[label];if(label.includes('渠道'))values=[label,'独立站','天猫','京东','抖音'];else if(label.includes('店铺'))values=[label,'天猫旗舰店','京东自营店','抖音商城','品牌小程序'];else if(label.includes('仓库'))values=[label,'华东一号仓','华南一号仓','华北二号仓'];else if(label.includes('状态'))values=[label,'正常','待处理','已完成','已停用'];else if(label.includes('类目'))values=[label,'数码影音','家用电器','家居办公'];else if(label.includes('品牌'))values=[label,'Apple','Dyson','EBASE'];else if(label.includes('负责人'))values=[label,'林知夏','周宁','陈曦'];else values=[label,'不限','需要关注'];return values.map(value=>({label:value,value}))}
+function toolbarOptions(label:string):ToolbarSelectOption[]{let values=[label];if(label.includes('渠道'))values=[label,'独立站','天猫','京东','抖音'];else if(label.includes('店铺'))values=[label,'天猫旗舰店','京东自营店','抖音商城','品牌小程序'];else if(label.includes('仓库'))values=[label,'WH-E01','WH-S01','WH-N02'];else if(label.includes('状态'))values=[label,'在售','草稿','已归档','可售','低库存','缺货','运输中','已签收'];else if(label.includes('类目'))values=[label,'家居生活','箱包出行','数码影音','智能穿戴'];else if(label.includes('品牌'))values=[label,'LUMEA Home','LUMEA Life','LUMEA Audio','LUMEA Tech'];else if(label.includes('承运商'))values=[label,'SF','JD','YTO','ZTO'];else if(label.includes('来源'))values=[label,'storefront','tmall','jd','douyin'];else values=[label,'不限'];return values.map(value=>({label:value,value}))}
 function changeToolbarFilter(label:string,value:string){filterValues[label]=value;info('筛选条件已更新',`${label}：${value}`)}
 function inspectContextItem(title:string,meta:string){info(title,`${meta}。对应的详情处理能力将在业务接口接入后开放。`)}
 function selectOrder(index:number){selectedRow.value=index;selectedOrderId.value=remoteOrders.value[index]?.id||'';void loadOrderDetail(selectedOrderId.value)}
@@ -80,7 +85,6 @@ const fulfillmentProgress=computed(()=>({pending_payment:12,paid:30,processing:5
 const contextItems=computed(()=>{const order=selectedOrderDetail.value;if(!order)return[];const payment=order.payments?.[0];const fulfillment=order.fulfillments?.[0];const log=order.status_logs?.at(-1);return[{title:payment?.status==='paid'?'支付已确认':'支付状态',meta:payment?`${displayPayment(payment.channel)} · ${payment.currency} ${payment.amount}`:'暂无支付记录',tone:payment?.status==='paid'?'success':'warning'},{title:fulfillment?'履约任务已创建':'等待创建履约',meta:fulfillment?`${fulfillment.warehouse_code||'未分配仓库'} · ${displayOrderStatus(fulfillment.status)}`:'订单付款后进入履约',tone:fulfillment?'primary':'warning'},{title:'当前订单状态',meta:`${displayOrderStatus(order.status)} · ${formatTime(order.updated_at)}`,tone:order.status==='cancelled'?'danger':'primary'},{title:'最近状态记录',meta:log?`${displayOrderStatus(log.to_status)} · ${formatTime(log.created_at)}`:'暂无状态变更记录',tone:'primary'}]})
 let searchTimer:number|undefined
 watch(() => props.title, () => {
-  const wasFirstPage = page.value === 1
   activeTab.value = 0
   query.value = ''
   remoteRows.value = []
@@ -88,12 +92,13 @@ watch(() => props.title, () => {
   modulePages.value = 1
   page.value = 1
   loadError.value = ''
-  if (wasFirstPage) void loadModuleRows()
+  void loadModuleRows()
+  void loadModuleTabCounts()
 })
 watch(query,()=>{window.clearTimeout(searchTimer);searchTimer=window.setTimeout(()=>{if(page.value!==1)page.value=1;else if(isOrders.value)void loadOrders();else void loadModuleRows()},280)})
 watch([activeTab,channel,storeId],()=>{if(page.value!==1)page.value=1;else if(isOrders.value)void loadOrders();else void loadModuleRows()})
 watch(page,()=>{if(isOrders.value)void loadOrders();else void loadModuleRows()})
-watch(isOrders,value=>{if(value){void loadOrderCounts();void loadOrders()}else void loadModuleRows()},{immediate:true})
+watch(isOrders,value=>{if(value){void loadOrderCounts();void loadOrders()}else{void loadModuleRows();void loadModuleTabCounts()}},{immediate:true})
 onBeforeUnmount(()=>window.clearTimeout(searchTimer))
 </script>
 <template><section v-if="config" class="data-page">

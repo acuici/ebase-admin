@@ -16,11 +16,15 @@ final class OperationsController extends ApiController
         $page = max(1, (int) $request->get('page', 1));
         $size = min(100, max(1, (int) $request->get('page_size', 20)));
         $keyword = trim((string) $request->get('keyword', ''));
+        $status = trim((string) $request->get('status', ''));
+        $category = trim((string) $request->get('category', ''));
+        $source = trim((string) $request->get('source_channel', ''));
+        $carrier = trim((string) $request->get('carrier_code', ''));
         $handlers = [
-            'products' => fn () => $this->products($keyword, $page, $size),
-            'inventory' => fn () => $this->inventory($keyword, $page, $size),
-            'customers' => fn () => $this->customers($keyword, $page, $size),
-            'logistics' => fn () => $this->logistics($keyword, $page, $size),
+            'products' => fn () => $this->products($keyword, $status, $category, $page, $size),
+            'inventory' => fn () => $this->inventory($keyword, $status, $page, $size),
+            'customers' => fn () => $this->customers($keyword, $status, $source, $page, $size),
+            'logistics' => fn () => $this->logistics($keyword, $status, $carrier, $page, $size),
             'content' => fn () => $this->content($keyword, $page, $size),
             'coupons' => fn () => $this->simple('coupons', $keyword, ['code', 'name', 'status'], $page, $size),
             'campaigns' => fn () => $this->simple('marketing_campaigns', $keyword, ['name', 'campaign_type', 'status'], $page, $size),
@@ -43,31 +47,40 @@ final class OperationsController extends ApiController
         ]);
     }
 
-    private function products(string $keyword, int $page, int $size): array
+    private function products(string $keyword, string $status, string $category, int $page, int $size): array
     {
         $query = Db::name('products')->alias('p')->field("p.id,p.product_no,p.name,p.brand,p.category,p.status,p.created_at,COALESCE((SELECT MIN(s1.price) FROM product_skus s1 WHERE s1.product_id=p.id),0) AS min_price,COALESCE((SELECT MAX(s2.price) FROM product_skus s2 WHERE s2.product_id=p.id),0) AS max_price,(SELECT COUNT(*) FROM product_skus s3 WHERE s3.product_id=p.id) AS sku_count,COALESCE((SELECT SUM(s4.stock_quantity-s4.reserved_quantity) FROM product_skus s4 WHERE s4.product_id=p.id),0) AS available_stock,(SELECT COUNT(*) FROM storefront_product_listings l WHERE l.product_id=p.id AND l.status IN ('published','scheduled')) AS published_channels");
         if ($keyword) $query->whereLike('p.name|p.product_no|p.brand', '%' . addcslashes($keyword, '%_') . '%');
+        if ($status) $query->where('p.status', $status);
+        if ($category) $query->where('p.category', $category);
         return $this->result($query, $page, $size);
     }
 
-    private function inventory(string $keyword, int $page, int $size): array
+    private function inventory(string $keyword, string $status, int $page, int $size): array
     {
         $query = Db::name('product_skus')->alias('s')->join('products p', 'p.id = s.product_id')->field('s.id,s.sku_code,s.name AS sku_name,p.name AS product_name,s.stock_quantity,s.reserved_quantity,(s.stock_quantity-s.reserved_quantity) AS available_stock,s.price,s.status');
         if ($keyword) $query->whereLike('s.sku_code|s.name|p.name', '%' . addcslashes($keyword, '%_') . '%');
+        if ($status === 'out_of_stock') $query->whereRaw('s.stock_quantity - s.reserved_quantity <= 0');
+        if ($status === 'low_stock') $query->whereRaw('s.stock_quantity - s.reserved_quantity > 0 AND s.stock_quantity - s.reserved_quantity <= 20');
+        if ($status === 'active') $query->where('s.status', 'active');
         return $this->result($query, $page, $size);
     }
 
-    private function customers(string $keyword, int $page, int $size): array
+    private function customers(string $keyword, string $status, string $source, int $page, int $size): array
     {
         $query = Db::name('customers')->alias('c')->field("c.id,c.customer_no,c.name,c.email,c.phone,c.status,c.source_channel,c.created_at,(SELECT COUNT(*) FROM orders o WHERE o.customer_id=c.id) AS order_count,COALESCE((SELECT SUM(o2.total_amount) FROM orders o2 WHERE o2.customer_id=c.id AND o2.status NOT IN ('cancelled')),0) AS total_spend,(SELECT MAX(o3.created_at) FROM orders o3 WHERE o3.customer_id=c.id AND o3.status NOT IN ('cancelled')) AS last_order_at,(SELECT GROUP_CONCAT(t.name ORDER BY t.id SEPARATOR '、') FROM customer_tag_relations r JOIN customer_tags t ON t.id=r.tag_id WHERE r.customer_id=c.id) AS tags");
         if ($keyword) $query->whereLike('customer_no|name|email|phone', '%' . addcslashes($keyword, '%_') . '%');
+        if ($status) $query->where('c.status', $status);
+        if ($source) $query->where('c.source_channel', $source);
         return $this->result($query, $page, $size);
     }
 
-    private function logistics(string $keyword, int $page, int $size): array
+    private function logistics(string $keyword, string $status, string $carrier, int $page, int $size): array
     {
         $query = Db::name('shipment_packages')->alias('p')->join('fulfillments f', 'f.id = p.fulfillment_id')->leftJoin('logistics_exceptions e', 'e.package_id = p.id AND e.status IN ("open","processing")')->field('p.id,p.package_no,p.carrier_code,p.tracking_no,p.status,f.order_id,e.exception_type,e.severity,e.description');
         if ($keyword) $query->whereLike('p.package_no|p.tracking_no|p.carrier_code', '%' . addcslashes($keyword, '%_') . '%');
+        if ($status) $query->where('p.status', $status);
+        if ($carrier) $query->where('p.carrier_code', $carrier);
         return $this->result($query, $page, $size);
     }
 
