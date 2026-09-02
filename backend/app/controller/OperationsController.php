@@ -146,6 +146,19 @@ final class OperationsController extends ApiController
     }
 
 
+    public function report(Request $request): Response
+    {
+        $start = $request->get('start', date('Y-m-d', strtotime('-29 days')));
+        $end = $request->get('end', date('Y-m-d'));
+        $where = "o.created_at >= '{$start} 00:00:00' AND o.created_at <= '{$end} 23:59:59' AND o.status <> 'cancelled'";
+        $summary = Db::query("SELECT COUNT(*) AS order_count, COALESCE(SUM(total_amount),0) AS revenue, COALESCE(AVG(total_amount),0) AS average_order_value FROM orders o WHERE {$where}")[0];
+        $refunds = Db::name('refunds')->whereBetweenTime('created_at', $start, $end)->whereIn('status', ['processing', 'succeeded'])->sum('amount');
+        $daily = Db::query("SELECT DATE(o.created_at) AS date, COUNT(*) AS orders, COALESCE(SUM(o.total_amount),0) AS revenue FROM orders o WHERE {$where} GROUP BY DATE(o.created_at) ORDER BY date ASC");
+        $channels = Db::query("SELECT COALESCE(o.channel_type,'unknown') AS channel, COUNT(*) AS orders, COALESCE(SUM(o.total_amount),0) AS revenue FROM orders o WHERE {$where} GROUP BY o.channel_type ORDER BY revenue DESC");
+        return $this->success(['summary' => ['order_count' => (int) $summary['order_count'], 'revenue' => (string) $summary['revenue'], 'average_order_value' => (string) $summary['average_order_value'], 'refund_amount' => (string) $refunds, 'refund_rate' => round(((float) $refunds / max(0.01, (float) $summary['revenue'])) * 100, 2)], 'daily' => $daily, 'channels' => $channels, 'generated_at' => date('Y-m-d H:i:s')]);
+    }
+
+
     public function dashboard(): Response
     {
         return $this->success([
