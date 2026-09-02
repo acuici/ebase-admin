@@ -16,7 +16,7 @@
 .pagination-meta,
 .pagination-pages,
 .pagination-jump,
-.pagination-meta label {
+.pagination-size {
   display: flex;
   align-items: center;
 }
@@ -30,7 +30,7 @@
 }
 
 .pagination-meta { gap: 12px; white-space: nowrap; }
-.pagination-meta label,
+.pagination-size,
 .pagination-jump { gap: 6px; }
 .pagination-pages { gap: 5px; }
 
@@ -40,7 +40,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.pagination-meta select,
 .pagination-jump input,
 .table-footer .pagination button {
   height: 32px;
@@ -53,10 +52,14 @@
   line-height: 1;
 }
 
-.pagination-meta select {
-  min-width: 74px;
-  padding: 0 26px 0 10px;
-  cursor: pointer;
+.pagination-size-select .toolbar-select-trigger {
+  min-width: 82px;
+  height: 32px;
+  padding-inline: 10px;
+  border-color: var(--border);
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 11px;
 }
 
 .table-footer .pagination button {
@@ -66,7 +69,7 @@
 }
 
 .table-footer .pagination button.active {
-  border-color: var(--primary);
+  border-color: transparent;
   background: var(--primary);
   color: #fff;
   font-weight: 600;
@@ -103,18 +106,23 @@
   appearance: none;
 }
 
-.pagination-meta select:focus-visible,
 .pagination-jump input:focus-visible,
 .table-footer .pagination button:focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid #98a2b3;
   outline-offset: 2px;
+}
+
+.pagination-size-select .toolbar-select-trigger:focus-visible {
+  outline: 0;
+  border-color: var(--border);
+  box-shadow: 0 0 0 2px #d0d5dd;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .table-footer .pagination button:not(:disabled):not(.active):hover,
-  .pagination-meta select:hover,
+  .pagination-size-select .toolbar-select-trigger:hover,
   .pagination-jump input:hover {
-    border-color: #c8c7ef;
+    border-color: #d0d5dd;
     background: #fafaff;
     color: var(--text);
   }
