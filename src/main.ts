@@ -21,6 +21,7 @@ import './styles/module-navigation.css'
 import './styles/topbar-interactions.css'
 import './styles/help-additions.css'
 import './styles/control-focus.css'
+import './styles/error-pages.css'
 
 document.documentElement.dataset.inputModality = 'pointer'
 document.addEventListener('pointerdown', () => { document.documentElement.dataset.inputModality = 'pointer' }, true)

@@ -14,6 +14,7 @@ import MemberProfileView from '../views/MemberProfileView.vue'
 import RoleEditorView from '../views/RoleEditorView.vue'
 import StorefrontView from '../views/StorefrontView.vue'
 import StorefrontSectionView from '../views/StorefrontSectionView.vue'
+import ErrorView from '../views/ErrorView.vue'
 
 const modules = [
   ['orders', '订单管理'],
@@ -61,6 +62,9 @@ const router = createRouter({
     { path: '/marketing/new', name: 'marketing-create', component: WorkflowView, props: { type: 'marketing' }, meta: { title: '新建营销活动' } },
     { path: '/reports/analysis', name: 'report-analysis', component: WorkflowView, props: { type: 'report' }, meta: { title: '经营分析详情' } },
     { path: '/settings/roles/:id', name: 'role-edit', component: RoleEditorView, props: true, meta: { title: '角色权限编辑' } },
+    { path: '/403', name: 'forbidden', component: ErrorView, props: { status: 403 }, meta: { title: '没有访问权限' } },
+    { path: '/500', name: 'server-error', component: ErrorView, props: { status: 500 }, meta: { title: '系统错误' } },
+    { path: '/:pathMatch(.*)*', name: 'not-found', component: ErrorView, props: { status: 404 }, meta: { title: '页面不存在' } },
   ],
 })
 
