@@ -73,6 +73,14 @@ const contextOrder=computed(()=>selectedOrderDetail.value||remoteOrders.value.fi
 const fulfillmentProgress=computed(()=>({pending_payment:12,paid:30,processing:52,shipped:76,completed:100,cancelled:0} as Record<string,number>)[contextOrder.value?.status||'']??0)
 const contextItems=computed(()=>{const order=selectedOrderDetail.value;if(!order)return[];const payment=order.payments?.[0];const fulfillment=order.fulfillments?.[0];const log=order.status_logs?.at(-1);return[{title:payment?.status==='paid'?'支付已确认':'支付状态',meta:payment?`${displayPayment(payment.channel)} · ${payment.currency} ${payment.amount}`:'暂无支付记录',tone:payment?.status==='paid'?'success':'warning'},{title:fulfillment?'履约任务已创建':'等待创建履约',meta:fulfillment?`${fulfillment.warehouse_code||'未分配仓库'} · ${displayOrderStatus(fulfillment.status)}`:'订单付款后进入履约',tone:fulfillment?'primary':'warning'},{title:'当前订单状态',meta:`${displayOrderStatus(order.status)} · ${formatTime(order.updated_at)}`,tone:order.status==='cancelled'?'danger':'primary'},{title:'最近状态记录',meta:log?`${displayOrderStatus(log.to_status)} · ${formatTime(log.created_at)}`:'暂无状态变更记录',tone:'primary'}]})
 let searchTimer:number|undefined
+watch(() => props.title, () => {
+  activeTab.value = 0
+  query.value = ''
+  remoteRows.value = []
+  moduleTotal.value = 0
+  loadError.value = ''
+  void loadModuleRows()
+})
 watch(query,()=>{if(isOrders.value){window.clearTimeout(searchTimer);searchTimer=window.setTimeout(()=>{page.value=1;void loadOrders()},280)}else void loadModuleRows()})
 watch([activeTab,channel,storeId],()=>{if(isOrders.value){page.value=1;void loadOrders()}else void loadModuleRows()})
 watch(page,()=>{if(isOrders.value)void loadOrders()})
