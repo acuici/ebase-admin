@@ -16,6 +16,7 @@ import './styles/members.css'
 import './styles/feedback.css'
 import './styles/storefront.css'
 import './styles/storefront-typography.css'
+import './styles/pagination.css'
 import './styles/topbar-interactions.css'
 import './styles/help-additions.css'
 
