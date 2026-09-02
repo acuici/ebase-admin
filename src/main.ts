@@ -20,5 +20,6 @@ import './styles/pagination.css'
 import './styles/module-navigation.css'
 import './styles/topbar-interactions.css'
 import './styles/help-additions.css'
+import './styles/control-focus.css'
 
 createApp(App).use(router).mount('#app')

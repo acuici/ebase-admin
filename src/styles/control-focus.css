@@ -1,0 +1,62 @@
+/*
+ * 全站表单与选择控件的唯一焦点规范。
+ * 默认使用中性边框和柔和灰环；错误、成功等语义状态由组件自身覆盖。
+ */
+:root {
+  --control-focus-border: #98a2b3;
+  --control-focus-ring: rgba(152, 162, 179, .2);
+}
+
+:where(input, textarea, select):not([type='checkbox']):not([type='radio']):not([aria-invalid='true']):focus {
+  outline: 0;
+  border-color: var(--control-focus-border);
+  box-shadow: 0 0 0 3px var(--control-focus-ring);
+}
+
+.global-search:focus-within,
+.module-search:focus-within,
+.table-search:focus-within,
+.hub-search:focus-within,
+.order-filters > label:focus-within,
+.help-popover > label:focus-within,
+.dashboard-period:focus-within,
+.auth-form > label > div:focus-within {
+  border-color: var(--control-focus-border);
+  box-shadow: 0 0 0 3px var(--control-focus-ring);
+}
+
+.global-search input:focus,
+.module-search input:focus,
+.table-search input:focus,
+.hub-search input:focus,
+.order-filters > label input:focus,
+.help-popover > label input:focus,
+.dashboard-period select:focus,
+.auth-form input:focus,
+.command-dialog > header input:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.toolbar-select-trigger:focus-visible,
+.date-range-trigger:focus-visible,
+.dashboard-status-trigger:focus-visible,
+.pagination-size-select .toolbar-select-trigger:focus-visible {
+  outline: 0;
+  border-color: var(--control-focus-border);
+  box-shadow: 0 0 0 3px var(--control-focus-ring);
+}
+
+/* 鼠标点击只保持中性控件边框，不显示品牌色强调。 */
+.toolbar-select-trigger:focus:not(:focus-visible),
+.date-range-trigger:focus:not(:focus-visible),
+.dashboard-status-trigger:focus:not(:focus-visible),
+.table-footer button:focus:not(:focus-visible) {
+  outline: 0;
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.table-footer button.active:focus:not(:focus-visible) {
+  border-color: transparent;
+}
