@@ -18,6 +18,11 @@ Route::get('api/v1/health', function () {
     ]);
 });
 
+// ---- 独立站公开接口 ----
+Route::get('api/v1/storefront-public/:siteCode/manifest', 'StorefrontPublicController/manifest');
+Route::get('storefront/:siteCode/sitemap.xml', 'StorefrontPublicController/sitemap');
+Route::get('storefront/:siteCode/robots.txt', 'StorefrontPublicController/robots');
+
 // ---- 认证（公开） ----
 Route::group('api/v1/auth', function () {
     Route::post('login', 'AuthController/login');

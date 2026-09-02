@@ -1,0 +1,59 @@
+openapi: 3.0.3
+info:
+  title: LUMEA Commerce API
+  version: 1.0.0
+  description: EBASE/LUMEA 多渠道电商运营后台 API
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      summary: 健康检查
+      responses:
+        '200': { description: OK }
+  /auth/login:
+    post:
+      summary: 成员登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200': { description: 登录成功 }
+  /operations/dashboard:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: 控制台统计
+      responses:
+        '200': { description: OK }
+  /operations/{module}:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: 分页读取运营模块
+      parameters:
+        - { name: module, in: path, required: true, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: page_size, in: query, schema: { type: integer, default: 20, maximum: 100 } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 分页数据 }
+  /storefront-public/{siteCode}/manifest:
+    get:
+      summary: 独立站公开配置与已发布商品
+      parameters: [{ name: siteCode, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /storefront/{siteCode}/sitemap.xml:
+    get:
+      summary: 独立站 Sitemap
+      responses: { '200': { description: XML } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
