@@ -8,8 +8,9 @@ import { useSystemBranding } from '../../composables/useSystemBranding'
 import GlobalSearch from './GlobalSearch.vue'
 import HelpMenu from './HelpMenu.vue'
 import NotificationCenter from './NotificationCenter.vue'
+import ChannelLogo from './ChannelLogo.vue'
 import {
-  BarChart3, Bell, Box, Check, ChevronDown, ClipboardList, FileText,
+  BarChart3, Bell, Check, ChevronDown, ClipboardList, FileText,
   LayoutDashboard, Megaphone, Menu, PackageSearch, Settings,
   TicketPercent, Truck, Users, Warehouse, X, Grid3X3, LogOut, ShieldCheck, UserRound, Globe2,
 } from 'lucide-vue-next'
@@ -25,8 +26,17 @@ const accountOpen = computed(()=>activeLayer.value==='account')
 const accountArea = ref<HTMLElement | null>(null)
 const storeOpen = computed(()=>activeLayer.value==='store')
 const storeArea = ref<HTMLElement | null>(null)
-const stores = ['EBASE 全渠道','天猫旗舰店','京东自营店','抖音商城','品牌小程序']
-const selectedStore = ref(localStorage.getItem('ebase:selected-store') || stores[0])
+const stores = [
+  { id: 'all', label: 'EBASE 全渠道' },
+  { id: 'tmall', label: '天猫旗舰店' },
+  { id: 'jd', label: '京东自营店' },
+  { id: 'douyin', label: '抖音商城' },
+  { id: 'miniapp', label: '品牌小程序' },
+] as const
+type Store = typeof stores[number]
+const storedStore = localStorage.getItem('ebase:selected-store')
+const selectedStore = ref<Store['id']>(stores.find(store => store.id === storedStore || store.label === storedStore)?.id || 'all')
+const activeStore = computed(() => stores.find(store => store.id === selectedStore.value) || stores[0])
 const navItems = [
   { to: '/', label: '控制台', icon: LayoutDashboard },
   { to: '/orders', label: '订单管理', icon: ClipboardList },
@@ -47,7 +57,7 @@ const avatarSource = computed(()=>avatarPreview.value||member.value?.avatar||'')
 function isNavActive(path:string){return path==='/'?route.path==='/' : route.path===path||route.path.startsWith(`${path}/`)}
 function openAccountPage(tab:string){closeLayer('account');router.push({path:'/member/profile',query:{tab}})}
 async function logout(){closeLayer('account');await signOut();router.push('/login')}
-function selectStore(store:string){selectedStore.value=store;closeLayer('store');localStorage.setItem('ebase:selected-store',store);success('经营视图已切换',`当前显示：${store}`)}
+function selectStore(store:Store){selectedStore.value=store.id;closeLayer('store');localStorage.setItem('ebase:selected-store',store.id);success('经营视图已切换',`当前显示：${store.label}`)}
 function toggleAccount(){toggleLayer('account')}
 function toggleStore(){toggleLayer('store')}
 function closeMenusOnOutside(event:MouseEvent){const target=event.target as Node;if(accountOpen.value&&accountArea.value&&!accountArea.value.contains(target))closeLayer('account');if(storeOpen.value&&storeArea.value&&!storeArea.value.contains(target))closeLayer('store')}
@@ -100,11 +110,11 @@ onBeforeUnmount(()=>{document.removeEventListener('click',closeMenusOnOutside);d
         <div class="topbar-left">
           <button class="mobile-menu" aria-label="打开导航" @click="mobileOpen = true"><Menu :size="20" /></button>
           <div ref="storeArea" class="store-switcher-wrap">
-            <button class="store-switcher" :class="{expanded:storeOpen}" aria-haspopup="menu" :aria-expanded="storeOpen" @click="toggleStore"><Box :size="17" /><span>{{selectedStore}}</span><ChevronDown class="store-chevron" :size="15" /></button>
+            <button class="store-switcher" :class="{expanded:storeOpen}" aria-haspopup="menu" :aria-expanded="storeOpen" @click="toggleStore"><ChannelLogo :channel="activeStore.id" /><span>{{activeStore.label}}</span><ChevronDown class="store-chevron" :size="15" /></button>
             <Transition name="store-menu">
               <div v-if="storeOpen" class="store-menu" role="menu" aria-label="切换店铺与渠道">
                 <div class="store-menu-heading"><strong>切换经营视图</strong><span>当前页面数据将按所选渠道展示</span></div>
-                <button v-for="store in stores" :key="store" :class="{active:selectedStore===store}" role="menuitemradio" :aria-checked="selectedStore===store" @click="selectStore(store)"><span class="store-icon"><Box :size="15"/></span><span>{{store}}</span><Check v-if="selectedStore===store" :size="15"/></button>
+                <button v-for="store in stores" :key="store.id" :class="{active:selectedStore===store.id}" role="menuitemradio" :aria-checked="selectedStore===store.id" @click="selectStore(store)"><span class="store-icon"><ChannelLogo :channel="store.id" /></span><span>{{store.label}}</span><Check v-if="selectedStore===store.id" :size="15"/></button>
               </div>
             </Transition>
           </div>
