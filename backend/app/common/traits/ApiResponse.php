@@ -18,7 +18,8 @@ trait ApiResponse
      */
     protected function requestId(): string
     {
-        return $this->request->header('x-request-id', '')
+        return $this->request->requestId
+            ?? $this->request->header('x-request-id', '')
             ?: strtoupper(bin2hex(random_bytes(8)));
     }
 

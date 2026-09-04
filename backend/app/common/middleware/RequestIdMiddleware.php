@@ -17,7 +17,7 @@ class RequestIdMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $requestId = $request->header('x-request-id', '')
+        $requestId = strtoupper($request->header('x-request-id', ''))
             ?: strtoupper(bin2hex(random_bytes(8)));
 
         $request->requestId = $requestId;

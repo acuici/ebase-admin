@@ -1,59 +1,97 @@
 openapi: 3.0.3
 info:
-  title: LUMEA Commerce API
-  version: 1.0.0
-  description: EBASE/LUMEA 多渠道电商运营后台 API
+  title: EBASE Channel Mapping API
+  version: 1.2.0
 servers:
   - url: /api/v1
+security: [{ bearerAuth: [] }]
 paths:
-  /health:
-    get:
-      summary: 健康检查
-      responses:
-        '200': { description: OK }
-  /auth/login:
+  /channel-orders/import:
     post:
-      summary: 成员登录
+      summary: 导入已支付渠道订单
+      description: 外部平台调用发生在事务外；本地事务要求所有商品行显式映射成功后才处理库存。
+      x-permission: channel.order.import
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/LoginRequest' }
+            schema: { $ref: '#/components/schemas/ChannelOrderImportRequest' }
       responses:
-        '200': { description: 登录成功 }
-  /operations/dashboard:
-    get:
-      security: [{ bearerAuth: [] }]
-      summary: 控制台统计
+        '201': { description: 成功或映射待处理, content: { application/json: { schema: { $ref: '#/components/schemas/ChannelOrderImportResponse' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: 店铺、幂等或库存冲突 }
+        '422': { description: 参数或商品行无效 }
+  /channel-orders/{id}/confirm-inventory:
+    post:
+      summary: 显式确认已支付订单库存
+      x-permission: channel.order.inventory_confirm
+      parameters: [{ $ref: '#/components/parameters/Id' }]
       responses:
-        '200': { description: OK }
-  /operations/{module}:
-    get:
-      security: [{ bearerAuth: [] }]
-      summary: 分页读取运营模块
-      parameters:
-        - { name: module, in: path, required: true, schema: { type: string } }
-        - { name: page, in: query, schema: { type: integer, default: 1 } }
-        - { name: page_size, in: query, schema: { type: integer, default: 20, maximum: 100 } }
-        - { name: keyword, in: query, schema: { type: string } }
-      responses:
-        '200': { description: 分页数据 }
-  /storefront-public/{siteCode}/manifest:
-    get:
-      summary: 独立站公开配置与已发布商品
-      parameters: [{ name: siteCode, in: path, required: true, schema: { type: string } }]
-      responses: { '200': { description: OK } }
-  /storefront/{siteCode}/sitemap.xml:
-    get:
-      summary: 独立站 Sitemap
-      responses: { '200': { description: XML } }
+        '200': { description: 成功或重复确认幂等成功 }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: 状态不符合或库存不足 }
+  /channel-stores:
+    get: { summary: 店铺分页, x-permission: channel.store.read, responses: { '200': { description: OK } } }
+    post: { summary: 创建店铺, x-permission: channel.store.create, responses: { '201': { description: Created } } }
+  /channel-products:
+    get: { summary: 平台商品分页, x-permission: channel.product.read, responses: { '200': { description: OK } } }
+    post: { summary: 创建平台商品映射, x-permission: channel.product.create, responses: { '201': { description: Created } } }
+  /channel-products/{id}/skus:
+    post: { summary: 创建平台 SKU 映射, x-permission: channel.mapping.manage, parameters: [{ $ref: '#/components/parameters/Id' }], responses: { '201': { description: Created }, '409': { description: 映射冲突 } } }
+  /channel-order-item-exceptions:
+    get: { summary: 映射异常分页, x-permission: channel.order_exception.read, responses: { '200': { description: OK } } }
+  /channel-order-item-exceptions/{id}/resolve:
+    post: { summary: 解决异常并补全订单明细, x-permission: channel.order_exception.resolve, parameters: [{ $ref: '#/components/parameters/Id' }], responses: { '200': { description: OK } } }
 components:
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
   schemas:
-    LoginRequest:
+    ChannelOrderImportRequest:
       type: object
-      required: [email, password]
+      required: [channel_type, channel_store_id, external_order_no, status, total_amount, currency, items]
       properties:
-        email: { type: string, format: email }
-        password: { type: string, format: password }
+        channel_type: { type: string, enum: [taobao, tmall, jd, pdd, douyin] }
+        channel_store_id: { type: integer, format: int64 }
+        external_order_no: { type: string, maxLength: 128 }
+        status: { type: string, enum: [paid] }
+        total_amount: { type: string, pattern: '^\\d{1,10}(\\.\\d{1,2})?$' }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        buyer_external_id: { type: string, nullable: true }
+        raw_payload: { type: object, additionalProperties: true }
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/ChannelOrderItem' }
+    ChannelOrderItem:
+      type: object
+      required: [external_order_item_id, external_product_id, external_sku_id, merchant_sku_code, product_name, spec_text, quantity, unit_price]
+      properties:
+        external_order_item_id: { type: string }
+        external_product_id: { type: string }
+        external_sku_id: { type: string }
+        merchant_sku_code: { type: string }
+        product_name: { type: string }
+        spec_text: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        unit_price: { type: string, pattern: '^\\d{1,10}(\\.\\d{1,2})?$' }
+    ChannelOrderImportResponse:
+      type: object
+      properties:
+        order_id: { type: integer }
+        created: { type: boolean }
+        idempotent: { type: boolean }
+        mapping_status: { type: string, enum: [pending, resolved, failed] }
+        items_created: { type: integer }
+        exceptions_created: { type: integer }
+        inventory_processed: { type: boolean }
+        inventory_processed_at: { type: string, format: date-time, nullable: true }
+    Error:
+      type: object
+      properties:
+        code: { type: string, enum: [FORBIDDEN, INVENTORY_INSUFFICIENT, CHANNEL_ORDER_MAPPING_REQUIRED, CHANNEL_ORDER_INVENTORY_CONFIRM_INVALID] }
+        message: { type: string }
+        request_id: { type: string }
+  responses:
+    Forbidden: { description: 无权限, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

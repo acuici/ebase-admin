@@ -8,7 +8,8 @@
 
 use think\facade\Route;
 
-// ---- 健康检查 ----
+Route::get('api/v1/health/db', 'HealthController/db');
+
 Route::get('api/v1/health', function () {
     return json([
         'code'       => 'OK',
@@ -16,12 +17,41 @@ Route::get('api/v1/health', function () {
         'data'       => ['status' => 'up', 'time' => date('c')],
         'request_id' => strtoupper(bin2hex(random_bytes(8))),
     ]);
-});
+})->pattern(['path' => 'api/v1/health']);
 
-// ---- 独立站公开接口 ----
+Route::get('api/v1/health/db', 'HealthController/db');
 Route::get('api/v1/storefront-public/:siteCode/manifest', 'StorefrontPublicController/manifest');
 Route::get('storefront/:siteCode/sitemap.xml', 'StorefrontPublicController/sitemap');
 Route::get('storefront/:siteCode/robots.txt', 'StorefrontPublicController/robots');
+
+Route::group('api/v1/channel-stores', function () {
+    Route::get('/', 'ChannelStoreController/index')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.store.read');
+    Route::post('/', 'ChannelStoreController/create')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.store.create');
+    Route::get('/:id', 'ChannelStoreController/read')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.store.read');
+    Route::patch('/:id', 'ChannelStoreController/update')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.store.update');
+    Route::post('/:id/disable', 'ChannelStoreController/disable')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.store.disable');
+    Route::post('/:id/sync', 'ChannelStoreController/sync')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.store.sync');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+Route::group('api/v1/channel-products', function () {
+    Route::get('/', 'ChannelProductController/index')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.product.read');
+    Route::post('/', 'ChannelProductController/create')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.product.create');
+    Route::get('/:id', 'ChannelProductController/read')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.product.read');
+    Route::patch('/:id', 'ChannelProductController/update')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.product.update');
+    Route::delete('/:id', 'ChannelProductController/archive')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.product.archive');
+    Route::post('/:id/sync', 'ChannelProductController/sync')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.product.sync');
+    Route::post('/:id/skus', 'ChannelProductController/createSku')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.mapping.manage');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+Route::group('api/v1/channel-product-skus', function () {
+    Route::patch('/:id', 'ChannelProductController/updateSku')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.mapping.manage');
+    Route::delete('/:id', 'ChannelProductController/archiveSku')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.mapping.manage');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+
+Route::group('api/v1/channel-order-item-exceptions', function () {
+    Route::get('/', 'ChannelOrderExceptionController/index')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.order_exception.read');
+    Route::get('/:id', 'ChannelOrderExceptionController/read')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.order_exception.read');
+    Route::post('/:id/resolve', 'ChannelOrderExceptionController/resolve')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.order_exception.resolve');
+    Route::post('/:id/ignore', 'ChannelOrderExceptionController/ignore')->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.order_exception.resolve');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
 
 // ---- 认证（公开） ----
 Route::group('api/v1/auth', function () {
@@ -129,7 +159,8 @@ Route::group('api/v1/assets', function () {
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
 // ---- 渠道订单与履约 ----
-Route::post('api/v1/channel-orders/import', 'ChannelOrderController/import')->middleware(\app\common\middleware\AuthMiddleware::class);
+Route::post('api/v1/channel-orders/import', 'ChannelOrderController/import')->middleware(\app\common\middleware\AuthMiddleware::class)->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.order.import');
+Route::post('api/v1/channel-orders/:id/confirm-inventory', 'ChannelOrderController/confirmInventory')->middleware(\app\common\middleware\AuthMiddleware::class)->middleware(\app\common\middleware\PermissionMiddleware::class, 'channel.order.inventory_confirm');
 Route::group('api/v1', function () {
     Route::get('orders/:orderId/fulfillments', 'FulfillmentController/index');
     Route::post('orders/:orderId/fulfillments', 'FulfillmentController/create');

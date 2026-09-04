@@ -102,6 +102,22 @@ class OrderService
         });
     }
 
+    public function confirmInventory(array $lines, int $orderId, ?int $operatorId): void
+    {
+        Db::transaction(function () use ($lines, $orderId, $operatorId): void {
+            foreach ($lines as $line) {
+                $sku = Db::name('product_skus')->where('id', $line['sku_id'])->lock(true)->find();
+                if (!$sku) throw BusinessException::notFound('订单 SKU 不存在');
+                $available = (int) $sku['stock_quantity'] - (int) $sku['reserved_quantity'];
+                if ($available < (int) $line['quantity']) throw BusinessException::insufficientInventory("SKU {$sku['sku_code']} 库存不足");
+                $before = (int) $sku['stock_quantity'];
+                $after = $before - (int) $line['quantity'];
+                Db::name('product_skus')->where('id', $line['sku_id'])->update(['stock_quantity' => $after, 'updated_at' => date('Y-m-d H:i:s')]);
+                $this->writeLedger((int) $line['sku_id'], -(int) $line['quantity'], $before, $after, 'deduct', (string) $orderId, $operatorId);
+            }
+        });
+    }
+
     public function transition(
         int $orderId,
         string $target,

@@ -12,6 +12,7 @@ use think\exception\HttpResponseException;
 use think\exception\ValidateException;
 use think\Response;
 use Throwable;
+use think\facade\Log;
 
 /**
  * 应用异常处理类
@@ -39,6 +40,16 @@ class ExceptionHandle extends Handle
      */
     public function report(Throwable $exception): void
     {
+        if (env('APP_ENV') === 'testing') {
+            Log::error('Testing request exception', [
+                'request_id' => request()->header('x-request-id', 'unknown'),
+                'exception' => $exception::class,
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+                'message' => $exception->getMessage(),
+                'stage' => 'exception_report',
+            ]);
+        }
         // 业务异常与可预期异常不需要记录错误日志
         if ($exception instanceof BusinessException) {
             return;
@@ -51,6 +62,24 @@ class ExceptionHandle extends Handle
      */
     public function render($request, Throwable $e): Response
     {
+        $requestId = (string) ($request->requestId ?? $request->header('x-request-id', 'unknown'));
+
+        if (env('APP_ENV') === 'testing') {
+            $record = [
+                'request_id' => $requestId,
+                'exception' => $e::class,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'message' => $e->getMessage(),
+                'stage' => 'exception_render',
+            ];
+            file_put_contents(
+                '/tmp/ebase-test-http-error.log',
+                json_encode($record, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL,
+                FILE_APPEND | LOCK_EX,
+            );
+        }
+
         // 业务异常：直接转换为标准错误响应
         if ($e instanceof BusinessException) {
             return $this->errorResponse(
@@ -88,6 +117,7 @@ class ExceptionHandle extends Handle
         }
 
         // 调试模式显示原始错误，否则输出内部错误
+
         if (env('APP_DEBUG')) {
             return $this->errorResponse(
                 'INTERNAL_ERROR',

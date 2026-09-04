@@ -1,19 +1,9 @@
 <?php
-// +----------------------------------------------------------------------
-// | ThinkPHP [ WE CAN DO IT JUST THINK ]
-// +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
-// +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
-// +----------------------------------------------------------------------
-// | Author: liu21st <liu21st@gmail.com>
-// +----------------------------------------------------------------------
-// $Id$
-
-if (is_file($_SERVER["DOCUMENT_ROOT"] . $_SERVER["SCRIPT_NAME"])) {
+// PHP built-in server router. All dynamic requests use the canonical application entry.
+$documentRoot = $_SERVER['DOCUMENT_ROOT'] ?? __DIR__;
+$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+if ($scriptName !== '' && is_file($documentRoot . $scriptName)) {
     return false;
-} else {
-    $_SERVER["SCRIPT_FILENAME"] = __DIR__ . '/index.php';
-
-    require __DIR__ . "/index.php";
 }
+$_SERVER['SCRIPT_FILENAME'] = __DIR__ . '/index.php';
+require __DIR__ . '/index.php';
