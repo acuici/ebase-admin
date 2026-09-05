@@ -5,21 +5,23 @@ use app\common\controller\ApiController;
 use app\common\exception\BusinessException;
 use app\common\model\Order;
 use app\common\service\OrderService;
+use app\common\service\OrderListService;
 use app\validate\OrderValidate;
 use think\Request;
 use think\Response;
 class OrderController extends ApiController
 {
+    private OrderListService $lists;
+
+    public function __construct(\think\App $app)
+    {
+        parent::__construct($app);
+        $this->lists = new OrderListService();
+    }
+
     public function index(Request $request): Response
     {
-        $page=max(1,(int)$request->get('page',1)); $size=min(100,max(1,(int)$request->get('page_size',20)));
-        $query=Order::with('items');
-        if ($status=$request->get('status')) $query->where('status',$status);
-        if ($channel=$request->get('channel_type')) $query->where('channel_type',$channel);
-        if ($storeId=$request->get('channel_store_id')) $query->where('channel_store_id',(int)$storeId);
-        if ($no=trim((string)$request->get('order_no',''))) $query->whereLike('order_no|external_order_no','%'.addcslashes($no,'%_').'%');
-        $total=$query->count(); $items=$query->order('id','desc')->page($page,$size)->select();
-        return $this->paginated($items,$page,$size,$total);
+        return $this->success($this->lists->list($request->get()));
     }
     public function read(int $id): Response
     {

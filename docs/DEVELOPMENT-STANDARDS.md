@@ -239,3 +239,13 @@ npm run build
 - 禁止无幂等键执行支付、退款、库存回补和队列消费。
 - 禁止捕获异常后静默成功；所有异常必须进入统一处理和可观测日志。
 - 禁止未经评审改变现有路由语义、视觉 token、响应结构或权限码命名。
+
+## 12. 列表查询与二级业务 CRUD
+
+- 列表查询统一使用 `page`、`page_size`、`keyword`、`status`、`sort_by`、`sort_order`；`page_size` 超过 100 时按 100 返回，排序字段必须由服务端白名单解析。
+- 日期筛选使用 `start_date`、`end_date` 或领域明确的日期字段；日期范围最长 180 天，查询参数中的未知字段返回 `VALIDATION_ERROR`。
+- 订单的支付方式和履约状态必须使用关联存在条件查询，禁止直接 JOIN 后再分页造成订单重复或 total 错误。
+- `operations` 列表的筛选构造集中在 `OperationsListService`；订单、成员、独立站列表分别由领域 ListService 负责。
+- `secondary-operations` 的 refunds、warehouses、categories、suppliers、segments、approvals 必须使用资源级字段白名单和独立 create/update Validate；禁止请求字段动态透传数据库。
+- 运营筛选所需事实字段与关系由可回滚的 `database/schema/26-operations-filter-fields.sql`、`27-categories.sql` 提供，对应 `.down.sql` 必须可执行。
+- `sales_status` 接受前端值 `active`、`draft`、`archived` 并直接映射商品 `status`；`validity` 接受 `active`、`expiring`、`ended` 并依据优惠券时间事实；`turnover_days` 接受 `lte_7`、`8_to_30`、`gt_30` 并依据最近 30 天销售聚合。

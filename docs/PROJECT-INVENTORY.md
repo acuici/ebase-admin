@@ -1,6 +1,6 @@
 # EBASE 页面与功能清单
 
-更新日期：2026-09-03
+更新日期：2026-09-05
 当前阶段：高保真前端与 ThinkPHP 8 API 渐进联调。
 
 ## 1. 当前实现状态
@@ -9,7 +9,7 @@
 - 图标：Lucide Vue Next。
 - 数据：成员目录与订单管理已接入统一 API Client 和 ThinkPHP 8 API；其余部分页面仍使用内置模拟数据，部分 CRUD、流程表单、收藏和最近访问使用 `localStorage` 持久化。
 - 认证：已有登录交互原型，但尚未接入 JWT、刷新令牌、验证码或后端会话。
-- 后端：仓库已包含 ThinkPHP 8、MySQL Schema、JWT/Refresh Token、订单和成员等首批接口；Redis、队列、对象存储及外部支付/物流适配仍需按开发规范继续完成。
+- 后端：ThinkPHP 8 已提供订单、商品、库存、会员、物流、内容、优惠券、营销、成员、独立站列表的服务端筛选与统一分页；二级 refunds、warehouses、categories、suppliers、segments、approvals 使用显式字段白名单和审计日志。
 
 因此，“页面存在”不等于“生产业务能力已经完成”。接后端时不得保留 `localStorage` 作为真实业务数据源。
 
@@ -125,6 +125,21 @@
 4. 建立 Redis 库存锁和队列，完成订单超时取消与库存回补。
 5. 接入微信支付服务层和可靠回调流程。
 6. 按业务节奏接入物流、优惠券、发票、对象存储与消息通知。
+
+## 5.1 已实现的列表筛选契约
+
+- `/api/v1/orders`：`keyword`、`order_no`、`status`、`channel_type`、`channel_store_id`、`payment_method`、`fulfillment_status`、`start_date`、`end_date`、分页和排序。
+- `/api/v1/operations/products`：`keyword`、`status`、`category`、`brand`、`sales_status`、`publish_channel`、分页和排序。
+- `/api/v1/operations/inventory`：`keyword`、`status`、`warehouse`、`inventory_status`、`supplier`、`turnover_days`、分页和排序。
+- `/api/v1/operations/customers`：`keyword`、`status`、`member_tier`、`source_channel`、`customer_tag`、`spend_range`、分页和排序。
+- `/api/v1/operations/logistics`：`keyword`、`status`、`warehouse`、`carrier_code`、`delivery_status`、`exception_type`、分页和排序。
+- `/api/v1/operations/content`：`keyword`、`content_type`、`publish_channel`、`content_status`、`published_at`、分页和排序。
+- `/api/v1/operations/coupons`：`keyword`、`coupon_type`、`applicable_channel`、`audience`、`validity`、`status`、分页和排序。
+- `/api/v1/operations/campaigns`：`keyword`、`campaign_type`、`publish_channel`、`owner`、`start_date`、`end_date`、`status`、分页和排序。
+- `/api/v1/admin/members`：`keyword`、`status`、`department`、`role`、`data_scope`、分页和排序。
+- `/api/v1/storefront/sites`：`keyword`、`status`、`locale`、`currency`、分页和排序。
+
+`warehouse`、`supplier`、`member_tier`、`data_scope`、`applicable_channel`、`audience`、`publish_channel`、`owner` 的事实字段由 26 号迁移或已有关系表达；`sales_status` 接受前端值 `active`、`draft`、`archived` 并直接映射商品 `status`。`validity` 接受前端值 `active`、`expiring`、`ended`，根据优惠券 `status`、`starts_at`、`ends_at` 实时计算。`turnover_days` 接受 `lte_7`、`8_to_30`、`gt_30`，使用最近 30 天已支付订单数量计算日均销量与可用库存。
 
 ## 6. 关键源码
 

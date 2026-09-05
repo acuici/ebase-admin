@@ -4,69 +4,56 @@ declare(strict_types=1);
 namespace app\controller;
 
 use app\common\controller\ApiController;
-use app\common\exception\BusinessException;
-use app\common\service\NotificationService;
-use think\facade\Db;
+use app\common\service\SecondaryOperationService;
+use think\App;
 use think\Request;
 use think\Response;
 
-/** CRUD endpoints for secondary operations backed by domain tables. */
 final class SecondaryOperationsController extends ApiController
 {
-    private const TABLES = [
-        'refunds' => 'refunds',
-        'warehouses' => 'warehouses',
-        'categories' => 'categories',
-        'suppliers' => 'suppliers',
-        'segments' => 'customer_segments',
-        'assets' => 'assets',
-        'approvals' => 'approval_requests',
-        'audit-logs' => 'operation_logs',
+    private const PERMISSIONS = [
+        'refunds' => 'refund.refund.manage',
+        'warehouses' => 'inventory.warehouse.manage',
+        'categories' => 'catalog.category.manage',
+        'suppliers' => 'supply.supplier.manage',
+        'segments' => 'customer.segment.manage',
+        'approvals' => 'marketing.approval.manage',
     ];
+    private SecondaryOperationService $service;
 
-    public function create(Request $request, string $type): Response
+    public function __construct(App $app)
     {
-        $this->assertWritable($type);
-        $data = $this->clean($type, $request->post());
-        $this->requireMember();
-        $id = Db::name(self::TABLES[$type])->insertGetId($data + ['created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
-        return $this->success(Db::name(self::TABLES[$type])->where('id', $id)->find(), '记录已创建', 201);
+        parent::__construct($app);
+        $this->service=new SecondaryOperationService();
+    }
+    public function create(Request $request,string $type):Response
+    {
+        $this->authorizeType($type);$this->assertKnownFields($type,$request->post(),'create');$this->validatePayload($type,$request->post(),'create');$member=$this->requireMember();$requestId=(string)($request->requestId??$request->header('x-request-id',''));
+        return $this->success($this->service->create($type,$request->post(),(int)$member->id,$requestId),'记录已创建',201);
+    }
+    public function update(Request $request,string $type,int $id):Response
+    {
+        $this->authorizeType($type);$this->assertKnownFields($type,$request->post(),'update');$this->validatePayload($type,$request->post(),'update');$member=$this->requireMember();$requestId=(string)($request->requestId??$request->header('x-request-id',''));
+        return $this->success($this->service->update($type,$id,$request->post(),(int)$member->id,$requestId),'记录已更新');
+    }
+    public function delete(Request $request,string $type,int $id):Response
+    {
+        $this->authorizeType($type);$member=$this->requireMember();$requestId=(string)($request->requestId??$request->header('x-request-id',''));$this->service->delete($type,$id,(int)$member->id,$requestId);return $this->success(null,'记录已删除');
+    }
+    private function authorizeType(string $type):void
+    {
+        if(!isset(self::PERMISSIONS[$type]))$this->error('RESOURCE_NOT_FOUND','资源类型不存在',404);
+        $member=$this->requireMember();$codes=$member->getPermissionCodes();if(!in_array('*',$codes,true)&&!in_array(self::PERMISSIONS[$type],$codes,true))throw new \app\common\exception\BusinessException('FORBIDDEN','无权操作该资源',403);
+    }
+    private function assertKnownFields(string $type,array $data,string $operation):void
+    {
+        $fields=['refunds'=>['create'=>['refund_no','payment_id','order_id','amount','currency','channel','status','reason'],'update'=>['status','reason','channel_refund_id']],'warehouses'=>['create'=>['warehouse_code','name','supplier_id','status'],'update'=>['name','supplier_id','status']],'categories'=>['create'=>['category_code','name','parent_id','status'],'update'=>['name','parent_id','status']],'suppliers'=>['create'=>['supplier_code','name','status'],'update'=>['name','status']],'segments'=>['create'=>['name','description','rules','status'],'update'=>['name','description','rules','status']],'approvals'=>['create'=>['request_type','resource_id','status','comment'],'update'=>['status','comment']]];
+        $unknown=array_diff(array_keys($data),$fields[$type][$operation]??[]);if($unknown)throw new \app\common\exception\BusinessException('VALIDATION_ERROR','存在未声明字段',422,['unknown'=>array_values($unknown)]);
     }
 
-    public function update(Request $request, string $type, int $id): Response
+    private function validatePayload(string $type,array $data,string $operation):void
     {
-        $this->assertWritable($type);
-        $table = self::TABLES[$type];
-        if (!Db::name($table)->where('id', $id)->find()) throw BusinessException::notFound('记录不存在');
-        $data = $this->clean($type, $request->post());
-        $data['updated_at'] = date('Y-m-d H:i:s');
-        Db::name($table)->where('id', $id)->update($data);
-        return $this->success(Db::name($table)->where('id', $id)->find(), '记录已更新');
-    }
-
-    public function delete(string $type, int $id): Response
-    {
-        $this->assertWritable($type);
-        $table = self::TABLES[$type];
-        if (!Db::name($table)->where('id', $id)->find()) throw BusinessException::notFound('记录不存在');
-        Db::name($table)->where('id', $id)->delete();
-        return $this->success(null, '记录已删除');
-    }
-
-    private function assertWritable(string $type): void
-    {
-        if (!isset(self::TABLES[$type]) || in_array($type, ['assets', 'audit-logs'], true)) throw BusinessException::validationError(['type' => ['该功能暂不支持写入']]);
-    }
-
-    private function clean(string $type, array $data): array
-    {
-        $allowed = match ($type) {
-            'segments' => ['name', 'description', 'rules', 'status'],
-            'approvals' => ['request_type', 'resource_id', 'status', 'comment'],
-            default => array_values(array_filter(array_keys($data), fn ($key) => !in_array($key, ['id', 'created_at', 'updated_at'], true))),
-        };
-        $clean = array_intersect_key($data, array_flip($allowed));
-        if (isset($clean['rules']) && is_array($clean['rules'])) $clean['rules'] = json_encode($clean['rules'], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-        return $clean;
+        $classes=['refunds'=>['create'=>\app\validate\SecondaryRefundCreateValidate::class,'update'=>\app\validate\SecondaryRefundUpdateValidate::class],'warehouses'=>['create'=>\app\validate\SecondaryWarehouseCreateValidate::class,'update'=>\app\validate\SecondaryWarehouseUpdateValidate::class],'categories'=>['create'=>\app\validate\SecondaryCategoryCreateValidate::class,'update'=>\app\validate\SecondaryCategoryUpdateValidate::class],'suppliers'=>['create'=>\app\validate\SecondarySupplierCreateValidate::class,'update'=>\app\validate\SecondarySupplierUpdateValidate::class],'segments'=>['create'=>\app\validate\SecondarySegmentCreateValidate::class,'update'=>\app\validate\SecondarySegmentUpdateValidate::class],'approvals'=>['create'=>\app\validate\SecondaryApprovalCreateValidate::class,'update'=>\app\validate\SecondaryApprovalUpdateValidate::class]];
+        $this->validate($data,$classes[$type][$operation]);
     }
 }

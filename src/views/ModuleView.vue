@@ -58,7 +58,7 @@ const filterParamNames: Record<string, string> = {
   来源渠道: "source_channel",
   用户标签: "customer_tag",
   消费金额: "spend_range",
-  全部承运商: "carrier",
+  全部承运商: "carrier_code",
   时效状态: "delivery_status",
   异常类型: "exception_type",
   内容类型: "content_type",
@@ -728,7 +728,7 @@ function toolbarOptions(label: string): ToolbarSelectOption[] {
       ["华北二号仓", "north_2"],
       ["西南中心仓", "southwest"],
     ],
-    carrier: [
+    carrier_code: [
       ["顺丰", "sf"],
       ["京东物流", "jd"],
       ["圆通", "yto"],

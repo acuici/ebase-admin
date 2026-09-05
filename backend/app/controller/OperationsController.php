@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace app\controller;
 
 use app\common\controller\ApiController;
+use app\common\service\OperationsListService;
+use app\validate\OperationsListValidate;
 use think\facade\Db;
 use think\Request;
 use think\Response;
@@ -11,8 +13,20 @@ use think\Response;
 /** Read-only, paginated operational views for the admin dashboard. */
 final class OperationsController extends ApiController
 {
+    private OperationsListService $lists;
+
+    public function __construct(\think\App $app)
+    {
+        parent::__construct($app);
+        $this->lists = new OperationsListService();
+    }
+
     public function module(Request $request, string $module): Response
     {
+        if (in_array($module, ['products', 'inventory', 'customers', 'logistics', 'content', 'coupons', 'campaigns'], true)) {
+            $this->validate($request->get(), OperationsListValidate::class);
+            return $this->success($this->lists->list($module, $request->get()));
+        }
         $page = max(1, (int) $request->get('page', 1));
         $size = min(100, max(1, (int) $request->get('page_size', 20)));
         $keyword = trim((string) $request->get('keyword', ''));

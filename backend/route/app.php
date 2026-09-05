@@ -91,9 +91,9 @@ Route::group('api/v1/admin', function () {
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
 Route::group('api/v1/secondary-operations', function () {
-    Route::post('/:type', 'SecondaryOperationsController/create');
-    Route::put('/:type/:id', 'SecondaryOperationsController/update');
-    Route::delete('/:type/:id', 'SecondaryOperationsController/delete');
+    Route::post('/:type', 'SecondaryOperationsController/create')->middleware(\app\common\middleware\PermissionMiddleware::class, 'secondary.operation.manage');
+    Route::put('/:type/:id', 'SecondaryOperationsController/update')->middleware(\app\common\middleware\PermissionMiddleware::class, 'secondary.operation.manage');
+    Route::delete('/:type/:id', 'SecondaryOperationsController/delete')->middleware(\app\common\middleware\PermissionMiddleware::class, 'secondary.operation.manage');
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
 // ---- 运营模块聚合读取 ----
