@@ -26,7 +26,7 @@ onMounted(()=>{document.addEventListener('click',outside);document.addEventListe
     <Teleport to="body"><Transition name="date-range-menu"><section v-if="open" ref="card" class="date-range-card" :style="cardPosition" role="dialog" aria-label="选择日期范围">
       <header><div><strong>选择日期范围</strong><span>最长可查询 180 天</span></div></header>
       <div class="date-range-presets"><button v-for="days in ([3,7,30] as const)" :key="days" :class="{active:modelValue.preset===days}" @click="preset(days)">近 {{days}} 日</button></div>
-      <div class="date-range-custom"><label><span>起始日期</span><input v-model="draftStart" type="date"/></label><i></i><label><span>截止日期</span><input v-model="draftEnd" type="date"/></label></div>
+      <div class="date-range-custom"><label><span>起始日期</span><input v-model="draftStart" name="start_date" type="date"/></label><i></i><label><span>截止日期</span><input v-model="draftEnd" name="end_date" type="date"/></label></div>
       <p v-if="error" class="date-range-error">{{error}}</p>
       <footer><button class="button secondary" @click="open=false">取消</button><button class="button primary" @click="apply"><Check :size="14"/>应用日期</button></footer>
     </section></Transition></Teleport>

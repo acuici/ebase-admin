@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { AlertTriangle, Bell, Check, PackageSearch, ShoppingBag } from 'lucide-vue-next'
+import { AlertTriangle, ArrowRight, Bell, Check, PackageSearch, ShoppingBag } from 'lucide-vue-next'
 import { apiRequest } from '../../api/client'
 import { useToast } from '../../composables/useToast'
 import { useTopbarLayer } from '../../composables/useTopbarLayer'
+import { useAuth } from '../../composables/useAuth'
 
 interface NotificationItem { id: string; notification_type: string; title: string; content: string; target_path?: string | null; read_at?: string | null; created_at: string }
 interface NotificationResponse { items: NotificationItem[]; unread: number }
@@ -12,6 +13,7 @@ interface NotificationResponse { items: NotificationItem[]; unread: number }
 const router = useRouter()
 const { success, error: showError } = useToast()
 const { active, open: openLayer, close } = useTopbarLayer()
+const { isAuthenticated } = useAuth()
 const open = computed({ get: () => active.value === 'notifications', set: value => value ? openLayer('notifications') : close('notifications') })
 const root = ref<HTMLElement | null>(null)
 const notices = ref<NotificationItem[]>([])
@@ -57,7 +59,7 @@ function relativeTime(date: string): string { return new Date(date).toLocaleStri
 function outside(event: MouseEvent) { if (root.value && !root.value.contains(event.target as Node)) open.value = false }
 function key(event: KeyboardEvent) { if (event.key === 'Escape') open.value = false }
 
-onMounted(() => { void load(); document.addEventListener('click', outside); document.addEventListener('keydown', key) })
+onMounted(() => { if (isAuthenticated.value) void load(); document.addEventListener('click', outside); document.addEventListener('keydown', key) })
 onBeforeUnmount(() => { document.removeEventListener('click', outside); document.removeEventListener('keydown', key) })
 </script>
 
@@ -66,11 +68,11 @@ onBeforeUnmount(() => { document.removeEventListener('click', outside); document
     <button class="notification" :class="{ active: open }" aria-label="通知" aria-haspopup="dialog" :aria-expanded="open" @click.stop="open = !open"><Bell :size="19" /><i v-if="unread" /></button>
     <Transition name="topbar-popover">
       <section v-if="open" class="topbar-popover notification-popover">
-        <header><div><strong>通知中心</strong><span>{{ unread ? `${unread} 条未读消息` : '全部已读' }}</span></div><button v-if="unread" @click="markAll"><Check :size="14" />全部已读</button></header>
+        <header><div class="notice-heading"><strong>通知中心</strong><span class="notice-count" :class="{clear:!unread}">{{ unread ? `${unread} 条未读` : '全部已读' }}</span></div><button v-if="unread" @click="markAll"><Check :size="14" />全部已读</button></header>
         <div v-if="loading" class="notice-empty">正在加载通知...</div>
         <div v-else-if="notices.length" class="notice-list"><button v-for="item in notices" :key="item.id" :class="{ unread: !item.read_at }" @click="go(item)"><span :data-type="item.notification_type"><component :is="eventIcon(item.notification_type)" :size="16" /></span><div><b>{{ item.title }}</b><p>{{ item.content }}</p><small>{{ relativeTime(item.created_at) }}</small></div><i v-if="!item.read_at" /></button></div>
         <div v-else class="notice-empty"><Bell :size="22" /><strong>暂无通知</strong><p>新的补货、物流和审批提醒会出现在这里。</p></div>
-        <footer><button @click="open = false; router.push('/member/profile?tab=notifications')">管理通知偏好</button></footer>
+        <footer><button @click="open = false; router.push('/member/profile?tab=notifications')"><span>管理通知偏好</span><ArrowRight :size="14" /></button></footer>
       </section>
     </Transition>
   </div>

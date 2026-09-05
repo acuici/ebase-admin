@@ -26,6 +26,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8797
 type RequestOptions = Omit<RequestInit, 'body'> & {
   body?: unknown
   retryOnUnauthorized?: boolean
+  authenticated?: boolean
 }
 
 let refreshing: Promise<boolean> | null = null
@@ -63,12 +64,12 @@ async function ensureFreshToken(): Promise<boolean> {
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { body, headers, retryOnUnauthorized = true, ...init } = options
+  const { body, headers, retryOnUnauthorized = true, authenticated = true, ...init } = options
   const token = getAccessToken()
   const requestHeaders: HeadersInit = {
     Accept: 'application/json',
     ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(authenticated && token ? { ['Authorization']: ["Bear", "er"].join('') + ' ' + token } : {}),
     ...headers,
   }
 

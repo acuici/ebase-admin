@@ -63,7 +63,9 @@ function toggleStore(){toggleLayer('store')}
 function closeMenusOnOutside(event:MouseEvent){const target=event.target as Node;if(accountOpen.value&&accountArea.value&&!accountArea.value.contains(target))closeLayer('account');if(storeOpen.value&&storeArea.value&&!storeArea.value.contains(target))closeLayer('store')}
 function closeMenusOnEscape(event:KeyboardEvent){if(event.key==='Escape')closeLayer()}
 onMounted(async()=>{
-  await Promise.all([hydrate(true), loadBranding()])
+  const authenticated = await hydrate(true)
+  if (!authenticated) return
+  await loadBranding()
   document.title = systemName.value
   document.addEventListener('click',closeMenusOnOutside)
   document.addEventListener('keydown',closeMenusOnEscape)

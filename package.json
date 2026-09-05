@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "check:font-size": "node scripts/check-font-size.mjs",
+    "check:forms": "node scripts/check-form-contracts.mjs",
+    "build": "npm run check:font-size && npm run check:forms && vue-tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

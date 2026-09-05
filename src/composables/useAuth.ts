@@ -39,6 +39,7 @@ export function useAuth() {
       method: 'POST',
       body: { email, password },
       retryOnUnauthorized: false,
+      authenticated: false,
     })
     localStorage.setItem('ebase:access_token', data.access_token)
     localStorage.setItem('ebase:refresh_token', data.refresh_token)

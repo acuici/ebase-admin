@@ -61,20 +61,20 @@ async function login(): Promise<void> {
 
         <label>
           <span>成员邮箱</span>
-          <div><Mail :size="17" /><input v-model="email" type="email" autocomplete="email" placeholder="name@company.com" /></div>
+          <div><Mail :size="17" /><input v-model="email" name="email" type="email" autocomplete="email" placeholder="name@company.com" /></div>
         </label>
         <label>
           <span>登录密码</span>
           <div>
             <LockKeyhole :size="17" />
-            <input v-model="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" />
+            <input v-model="password" name="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" />
             <button type="button" aria-label="显示密码" @click="showPassword = !showPassword">
               <EyeOff v-if="showPassword" :size="17" /><Eye v-else :size="17" />
             </button>
           </div>
         </label>
         <div class="auth-options">
-          <label><input type="checkbox" checked />保持登录</label>
+          <label><input name="remember_me" type="checkbox" checked />保持登录</label>
           <RouterLink to="/forgot-password">忘记密码？</RouterLink>
         </div>
         <p v-if="error" class="auth-error">{{ error }}</p>

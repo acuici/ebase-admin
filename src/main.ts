@@ -29,4 +29,5 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Tab') document.documentElement.dataset.inputModality = 'keyboard'
 }, true)
 
-createApp(App).use(router).mount('#app')
+const app = createApp(App).use(router)
+router.isReady().then(() => app.mount('#app'))

@@ -12,7 +12,7 @@
 .module-tabs button {
   height: 46px;
   padding-inline: 16px;
-  font-size: 13px;
+  font-size:13px;
   font-weight: 500;
   line-height: 1.5;
 }
@@ -24,7 +24,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size:12px;
   font-weight: 500;
   line-height: 1.3;
   font-variant-numeric: tabular-nums;
@@ -36,20 +36,20 @@
 }
 
 .context-heading > span {
-  font-size: 11px;
+  font-size:12px;
   line-height: 1.4;
 }
 
 .context-heading h2 {
   margin-block: 10px 5px;
   font-family: inherit;
-  font-size: 18px;
+  font-size:18px;
   font-weight: 600;
   line-height: 1.4;
 }
 
 .context-heading p {
-  font-size: 12px;
+  font-size:12px;
   line-height: 1.6;
 }
 
@@ -60,12 +60,12 @@
 }
 
 .context-score span {
-  font-size: 12px;
+  font-size:12px;
   line-height: 1.5;
 }
 
 .context-score strong {
-  font-size: 18px;
+  font-size:18px;
   line-height: 1.3;
   font-variant-numeric: tabular-nums;
 }
@@ -76,21 +76,21 @@
 }
 
 .context-list strong {
-  font-size: 13px;
+  font-size:13px;
   font-weight: 600;
   line-height: 1.5;
 }
 
 .context-list small {
   margin-top: 4px;
-  font-size: 11px;
+  font-size:12px;
   line-height: 1.5;
 }
 
 .context-action {
   height: 40px;
   margin-top: 20px;
-  font-size: 12px;
+  font-size:12px;
 }
 
 .module-tabs button:focus-visible,
