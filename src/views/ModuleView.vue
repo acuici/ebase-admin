@@ -218,6 +218,16 @@ function displayChannel(channel: string) {
     )[channel] || channel
   );
 }
+function displayCarrier(carrier: string) {
+  return (
+    (
+      { sf: "顺丰", jd: "京东物流", yto: "圆通", zto: "中通" } as Record<
+        string,
+        string
+      >
+    )[carrier.toLowerCase()] || carrier
+  );
+}
 function displayPayment(channel = "") {
   return (
     (
@@ -326,24 +336,19 @@ const activeModuleStatus = computed(
   () =>
     moduleTabOptions[moduleKey[props.title]]?.[activeTab.value]?.status || "",
 );
-const moduleFilters = computed(
-  () =>
-    ({
-      products: {
-        status: activeModuleStatus.value,
-        category: filterValues["全部类目"] || "",
-      },
-      inventory: { status: activeModuleStatus.value },
-      customers: {
-        status: activeModuleStatus.value,
-        source_channel: filterValues["来源渠道"] || "",
-      },
-      logistics: {
-        status: activeModuleStatus.value,
-        carrier_code: filterValues["全部承运商"] || "",
-      },
-    })[moduleKey[props.title]] || {},
-);
+function selectedModuleFilters(): Record<string, string> {
+  const filters: Record<string, string> = {};
+  for (const label of config.value.filters || []) {
+    const value = filterValues[label];
+    if (value) filters[filterParamName(label)] = value;
+  }
+  return filters;
+}
+const moduleFilters = computed<Record<string, string>>(() => {
+  const filters = selectedModuleFilters();
+  if (activeModuleStatus.value) filters.status = activeModuleStatus.value;
+  return filters;
+});
 async function loadModuleRows() {
   if (isOrders.value || !moduleKey[props.title]) return;
   const started = Date.now();
@@ -452,12 +457,45 @@ function moduleRow(item: Record<string, unknown>): string[] {
     return [
       String(item.package_no ?? "—"),
       String(item.tracking_no ?? "—"),
-      String(item.carrier_code ?? "—"),
+      displayCarrier(String(item.carrier_code ?? "—")),
       String(item.order_id ?? "—"),
       displayStatus(item.status),
       String(item.exception_type ?? "—"),
       String(item.severity ?? "—"),
       String(item.description ?? "—"),
+    ];
+  if (moduleKey[props.title] === "content")
+    return [
+      String(item.id ?? "—"),
+      String(item.title ?? "—"),
+      String(item.content_type ?? "—"),
+      String(item.content_key ?? "—"),
+      String(item.slug ?? "—"),
+      String(item.created_by ?? "—"),
+      formatTime(String(item.published_at ?? item.updated_at ?? "")),
+      displayStatus(item.status),
+    ];
+  if (moduleKey[props.title] === "coupons")
+    return [
+      String(item.code ?? item.id ?? "—"),
+      String(item.name ?? "—"),
+      String(item.discount_type ?? "—"),
+      String(item.discount_value ?? "—"),
+      `${formatCount(item.total_quantity as number)} / ${formatCount(item.claimed_quantity as number)}`,
+      formatCount(item.claimed_quantity as number),
+      "—",
+      displayStatus(item.status),
+    ];
+  if (moduleKey[props.title] === "campaigns")
+    return [
+      String(item.id ?? "—"),
+      String(item.name ?? "—"),
+      String(item.campaign_type ?? "—"),
+      String(item.publish_channel ?? "—"),
+      String(item.budget ?? "—"),
+      String(item.revenue ?? "—"),
+      String(item.roi ?? "—"),
+      displayStatus(item.status),
     ];
   return moduleColumns[moduleKey[props.title]].map((key) =>
     String(item[key] ?? "—"),
@@ -589,8 +627,9 @@ const rows = computed(() => {
       displayOrderStatus(order.status),
       order.created_at,
     ]);
-  if (moduleKey[props.title])
-    return filterRenderedRows(remoteRows.value.map(moduleRow));
+  // 已接 API 的模块由后端完成筛选。这里不能再用中文展示文案过滤，
+  // 否则 carrier_code=jd 等合法结果会被“京东物流”二次过滤为空。
+  if (moduleKey[props.title]) return remoteRows.value.map(moduleRow);
   return filteredStaticRows();
 });
 let requestSequence = 0;
@@ -646,6 +685,12 @@ async function loadOrders() {
       status: activeOrderStatus.value || undefined,
       channel_type: channel.value || undefined,
       channel_store_id: storeId.value || undefined,
+      ...Object.fromEntries(
+        Object.entries(filterValues).map(([label, value]) => [
+          filterParamName(label),
+          value || undefined,
+        ]),
+      ),
     });
     if (sequence !== requestSequence) return;
     await waitForTransition(started);

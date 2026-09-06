@@ -20,7 +20,11 @@ import { useToast } from "../composables/useToast";
 import { ApiError } from "../api/client";
 import { getSystemSettings, saveSystemSettings } from "../api/settings";
 import { useSystemBranding } from "../composables/useSystemBranding";
-import { formFieldName } from "../utils/formFields";
+import {
+  formFieldName,
+  formOptionLabel,
+  formOptionValue,
+} from "../utils/formFields";
 
 const router = useRouter();
 const active = ref("company");
@@ -288,6 +292,14 @@ const configs = reactive<
   },
 });
 const current = computed(() => configs[active.value]);
+Object.values(configs).forEach((section) =>
+  section.groups.forEach((group) =>
+    group.fields.forEach((field) => {
+      if (field.type === "select")
+        field.value = String(formOptionValue(field.value));
+    }),
+  ),
+);
 const fieldKeyMap: Record<string, string> = {
   企业名称: "company_name",
   企业简称: "company_short_name",
@@ -348,8 +360,11 @@ async function loadSettings() {
     configs[active.value].groups.forEach((group) =>
       group.fields.forEach((field) => {
         const key = fieldKeyMap[field.label];
-        if (key && result.settings[key] !== undefined)
-          field.value = String(result.settings[key]);
+        if (key && result.settings[key] !== undefined) {
+          const value = String(result.settings[key]);
+          field.value =
+            field.type === "select" ? String(formOptionValue(value)) : value;
+        }
       }),
     );
   } catch (e) {
@@ -474,8 +489,10 @@ onMounted(() => {
                   v-model="field.value"
                   :name="formFieldName(field.label, active)"
                 >
-                  <option :value="field.value">{{ field.value }}</option>
-                  <option>其他选项</option></select
+                  <option :value="field.value">
+                    {{ formOptionLabel(field.value) }}
+                  </option>
+                  <option value="other">其他选项</option></select
                 ><input
                   v-else
                   v-model="field.value"

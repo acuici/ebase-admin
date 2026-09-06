@@ -5,7 +5,7 @@ import { ArrowLeft, Check, ChevronDown, Clock3, Save } from "lucide-vue-next";
 import FileUploader from "../components/forms/FileUploader.vue";
 import { useToast } from "../composables/useToast";
 import { getOperationsReport, type ReportData } from "../api/reports";
-import { formFieldName } from "../utils/formFields";
+import { formFieldName, formOptionValue } from "../utils/formFields";
 
 const props = defineProps<{ type: string }>();
 const router = useRouter();
@@ -665,7 +665,10 @@ watch(
   (fields) =>
     fields.forEach((field) => {
       const key = fieldKey(field);
-      if (!(key in formValues)) formValues[key] = field.value;
+      if (!(key in formValues))
+        formValues[key] = String(
+          field.kind === "select" ? formOptionValue(field.value) : field.value,
+        );
     }),
   { immediate: true },
 );
@@ -760,8 +763,10 @@ function previous() {
                 :name="formFieldName(field.label, type)"
                 class="field-control"
               >
-                <option :value="field.value">{{ field.value }}</option>
-                <option>其他选项</option></select
+                <option :value="formOptionValue(field.value)">
+                  {{ field.value }}
+                </option>
+                <option value="other">其他选项</option></select
               ><input
                 v-else
                 v-model="formValues[fieldKey(field)]"

@@ -5,6 +5,7 @@ import ModuleView from '../views/ModuleView.vue'
 import WorkflowView from '../views/WorkflowView.vue'
 import FeatureHubView from '../views/FeatureHubView.vue'
 import SecondaryView from '../views/SecondaryView.vue'
+import WarehouseView from '../views/WarehouseView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import LoginView from '../views/LoginView.vue'
 import ForgotPasswordView from '../views/ForgotPasswordView.vue'
@@ -35,6 +36,7 @@ const router = createRouter({
     { path: '/forgot-password', name: 'forgot-password', component: ForgotPasswordView, meta: { title: '找回密码', layout: 'auth' } },
     { path: '/', name: 'dashboard', component: DashboardView, meta: { title: '运营控制台' } },
     { path: '/features', name: 'features', component: FeatureHubView, meta: { title: '功能地图' } },
+    { path: '/features/warehouses', name: 'warehouse-feature', component: WarehouseView, meta: { title: '仓库管理' } },
     { path: '/features/:type', name: 'secondary-feature', component: SecondaryView, props: true, meta: { title: '二级功能' } },
     { path: '/settings', name: 'settings', component: SettingsView, meta: { title: '权限与系统设置' } },
     { path: '/settings/members', name: 'member-directory', component: MemberDirectoryView, meta: { title: '成员目录' } },

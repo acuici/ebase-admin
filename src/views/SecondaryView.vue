@@ -17,14 +17,18 @@ import { listOperationModule } from "../api/operations";
 import { apiRequest } from "../api/client";
 import TableState from "../components/common/TableState.vue";
 import ToolbarSelect from "../components/common/ToolbarSelect.vue";
-import { formFieldName } from "../utils/formFields";
+import {
+  formFieldName,
+  formOptionLabel,
+  formOptionValue,
+} from "../utils/formFields";
 
 const props = defineProps<{ type: string }>();
 const route = useRoute();
 const router = useRouter();
 const config = computed(() => secondaryConfigs[props.type]);
 const query = ref(String(route.query.keyword || ""));
-const activeStage = ref(String(route.query.stage || "全部"));
+const activeStage = ref(String(route.query.stage || ""));
 const localRows = ref<string[][]>([]);
 const drawer = ref(false);
 const mode = ref<"create" | "view" | "edit">("view");
@@ -38,25 +42,32 @@ watch(
   (value) => {
     localRows.value = value.rows.map((row) => [...row]);
     query.value = "";
-    activeStage.value = "全部";
+    activeStage.value = "";
   },
   { immediate: true },
 );
 const stageOptions = computed(() => [
-  { label: "全部阶段", value: "全部" },
-  ...config.value.stages.map((stage) => ({
+  { label: "全部阶段", value: "" },
+  ...config.value.stages.map((stage, index) => ({
     label: stage.title,
-    value: stage.title,
+    value: `stage_${index + 1}`,
   })),
 ]);
+const activeStageLabel = computed(
+  () =>
+    stageOptions.value.find((option) => option.value === activeStage.value)
+      ?.label || "",
+);
 const rows = computed(() => {
   const k = query.value.trim().toLowerCase();
   return localRows.value.filter(
     (row) =>
       (!k || row.some((v) => v.toLowerCase().includes(k))) &&
-      (activeStage.value === "全部" ||
+      (!activeStage.value ||
         row.some(
-          (v) => v.includes(activeStage.value) || activeStage.value.includes(v),
+          (v) =>
+            v.includes(activeStageLabel.value) ||
+            activeStageLabel.value.includes(v),
         )),
   );
 });
@@ -65,7 +76,7 @@ watch([query, activeStage], () => {
     query: {
       ...route.query,
       keyword: query.value || undefined,
-      stage: activeStage.value === "全部" ? undefined : activeStage.value,
+      stage: activeStage.value || undefined,
     },
   });
 });
@@ -89,7 +100,9 @@ function openCreate() {
     i === 0
       ? `NEW-${Date.now().toString().slice(-6)}`
       : i === config.value.columns.length - 1
-        ? "草稿"
+        ? ["warehouses", "suppliers", "categories"].includes(props.type)
+          ? "active"
+          : "draft"
         : "",
   );
   drawer.value = true;
@@ -99,19 +112,45 @@ function openRow(row: string[], targetMode: "view" | "edit") {
   editingIndex.value = localRows.value.indexOf(row);
   validationError.value = "";
   form.value = [...row];
+  form.value[form.value.length - 1] = String(
+    formOptionValue(form.value.at(-1) || ""),
+  );
   drawer.value = true;
 }
 function startEdit() {
   mode.value = "edit";
 }
+function statusOptions(type: string) {
+  if (type === "warehouses" || type === "suppliers" || type === "categories") {
+    return [
+      { label: "启用", value: "active" },
+      { label: "已停用", value: "disabled" },
+    ];
+  }
+  return [
+    { label: "草稿", value: "draft" },
+    { label: "待审核", value: "pending" },
+    { label: "已停用", value: "disabled" },
+  ];
+}
 function rowPayload() {
   const columns = config.value.columns;
-  return Object.fromEntries(
+  const payload = Object.fromEntries(
     columns.map((column, index) => [
       formFieldName(column, props.type),
       form.value[index],
     ]),
-  );
+  ) as Record<string, string>;
+  if (props.type === "warehouses" && payload.capacity_rate) {
+    payload.capacity_rate = payload.capacity_rate.replace(/%$/, "");
+  }
+  if (props.type === "warehouses" && payload.owner_code === "盘子") {
+    payload.owner_code = "panacea";
+  }
+  if (props.type === "warehouses" && payload.status === "正常") {
+    payload.status = "active";
+  }
+  return payload;
 }
 async function save() {
   if (!form.value[0]?.trim() || !form.value[1]?.trim()) {
@@ -189,9 +228,14 @@ function confirmDelete() {
         v-for="stage in config.stages"
         :key="stage.title"
         class="surface stage-card"
-        :class="{ active: activeStage === stage.title }"
+        :class="{
+          active: activeStage === `stage_${config.stages.indexOf(stage) + 1}`,
+        }"
         @click="
-          activeStage = activeStage === stage.title ? '全部' : stage.title
+          activeStage =
+            activeStage === `stage_${config.stages.indexOf(stage) + 1}`
+              ? ''
+              : `stage_${config.stages.indexOf(stage) + 1}`
         "
       >
         <header>
@@ -222,7 +266,7 @@ function confirmDelete() {
       <TableState
         v-if="!rows.length"
         state="empty"
-        :filtered="Boolean(query || activeStage !== '全部')"
+        :filtered="Boolean(query || activeStage)"
         title="没有匹配的数据"
         description="调整搜索关键词或阶段筛选，查看其他业务记录。"
         ><template #action
@@ -230,7 +274,7 @@ function confirmDelete() {
             class="button secondary"
             @click="
               query = '';
-              activeStage = '全部';
+              activeStage = '';
             "
           >
             清除筛选
@@ -304,11 +348,16 @@ function confirmDelete() {
                 v-model="form[index]"
                 :name="formFieldName(column, props.type)"
               >
-                <option>{{ form[index] }}</option>
-                <option>正常</option>
-                <option>草稿</option>
-                <option>待审核</option>
-                <option>已停用</option></select
+                <option :value="form[index]">
+                  {{ formOptionLabel(form[index]) }}
+                </option>
+                <option
+                  v-for="option in statusOptions(props.type)"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option></select
               ><input
                 v-else
                 v-model="form[index]"

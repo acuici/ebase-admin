@@ -1,33 +1,257 @@
 const fieldNames: Record<string, string> = {
+  // Storefront / settings
   站点名称: "site_name",
+  站点编码: "site_code",
   主域名: "primary_domain",
   语言: "locale",
   币种: "currency",
+  时区: "timezone",
+  品牌名称: "brand_name",
+  服务邮箱: "service_email",
   主题: "theme",
   最近发布: "last_published_at",
   状态: "status",
+  "SEO 标题": "seo_title",
+  "SEO 描述": "seo_description",
+  页面标题: "title",
+  页面标识: "content_key",
+  页面类型: "content_type",
+
+  // Members / roles / company
   角色名称: "role_name",
   角色描述: "role_description",
+  角色状态: "status",
+  数据范围: "data_scope",
+  成员数量: "member_count",
+  权限模板: "permission_template",
+  成员姓名: "name",
+  成员邮箱: "email",
+  手机号: "phone",
+  职位: "job_title",
+  部门: "department",
   企业名称: "company_name",
   企业简称: "company_short_name",
   统一社会信用代码: "unified_social_credit_code",
   所属行业: "industry",
   企业地址: "company_address",
-};
 
-function stableHash(value: string): string {
-  let hash = 2166136261;
-  for (const character of value) {
-    hash ^= character.codePointAt(0) ?? 0;
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(36);
-}
+  // Orders / fulfillment / after-sales
+  订单状态: "status",
+  销售渠道: "channel_type",
+  客户姓名: "customer_name",
+  联系电话: "phone",
+  收货地址: "address_line",
+  订单备注: "remark",
+  异常类型: "exception_type",
+  处理优先级: "severity",
+  收件人: "recipient_name",
+  修正后地址: "address_line",
+  处理备注: "resolution_note",
+  售后单号: "refund_no",
+  订单号: "order_no",
+  客户: "customer_id",
+  售后类型: "refund_type",
+  退款金额: "amount",
+  申请原因: "reason",
+  申请时间: "created_at",
+
+  // Catalog / inventory / channel mapping
+  商品名称: "name",
+  商品编号: "product_no",
+  商品类目: "category",
+  所属品牌: "brand",
+  销售价格: "price",
+  市场指导价: "market_price",
+  商品卖点: "selling_points",
+  商品描述: "description",
+  计划名称: "name",
+  目标仓库: "warehouse_code",
+  预计到货: "expected_at",
+  采购负责人: "created_by",
+  补货说明: "remark",
+  仓库编码: "warehouse_code",
+  仓库名称: "name",
+  负责人: "owner_code",
+  所在城市: "city",
+  库容率: "capacity_rate",
+  今日入库: "inbound_quantity",
+  今日出库: "outbound_quantity",
+  类目编码: "category_code",
+  类目名称: "category_name",
+  上级类目: "parent_id",
+  商品数: "product_count",
+  属性模板: "attribute_template",
+  渠道映射: "channel_mapping_status",
+  供应商编码: "supplier_code",
+  供应商名称: "name",
+  主营品类: "category",
+  合作等级: "cooperation_level",
+  准时交付率: "on_time_delivery_rate",
+  质检通过率: "quality_pass_rate",
+  "人群 ID": "segment_id",
+  人群名称: "name",
+  类型: "type",
+  覆盖用户: "user_count",
+  更新方式: "update_method",
+  最近更新: "updated_at",
+  应用活动: "campaign_id",
+  "素材 ID": "asset_id",
+  素材名称: "original_name",
+  "尺寸 / 时长": "dimensions_or_duration",
+  文件大小: "size_bytes",
+  所属文件夹: "folder_id",
+  上传人: "uploaded_by",
+
+  // Coupons / marketing / reporting / audit
+  优惠券名称: "name",
+  优惠券类型: "discount_type",
+  使用门槛: "min_amount",
+  优惠金额: "discount_value",
+  发行总量: "total_quantity",
+  有效期: "starts_at",
+  活动名称: "name",
+  活动类型: "campaign_type",
+  活动时间: "starts_at",
+  活动预算: "budget",
+  活动负责人: "created_by",
+  活动说明: "description",
+  分析周期: "start_date",
+  对比周期: "comparison_period",
+  数据粒度: "granularity",
+  店铺范围: "channel_store_id",
+  渠道范围: "channel_type",
+  内容标题: "title",
+  内容类型: "content_type",
+  内容作者: "created_by",
+  关联商品: "product_ids",
+  摘要: "summary",
+  发布状态: "status",
+  "任务 ID": "task_id",
+  任务名称: "name",
+  优惠券: "coupon_id",
+  目标人群: "segment_id",
+  计划数量: "planned_quantity",
+  成功数量: "success_quantity",
+  执行时间: "scheduled_at",
+  审批单号: "approval_no",
+  申请人: "submitted_by",
+  预算: "budget",
+  预估成交: "estimated_revenue",
+  ROI: "roi",
+  提交时间: "submitted_at",
+  "报表 ID": "report_id",
+  报表名称: "name",
+  创建人: "created_by",
+  维度数: "dimension_count",
+  指标数: "metric_count",
+  更新频率: "update_frequency",
+  最近运行: "last_run_at",
+  "日志 ID": "log_id",
+  时间: "created_at",
+  操作者: "operator_id",
+  模块: "module",
+  操作内容: "action",
+  "IP 地址": "ip",
+  风险等级: "risk_level",
+  结果: "result",
+};
 
 /**
  * 将本地化显示标签转换为稳定、只含 ASCII 的表单字段名。
- * 新增后端字段时应优先补充显式映射；哈希仅用于尚未接入 API 的原型字段。
+ * 已接入 API 的字段必须在上方显式登记；未知字段使用可读的 scope 前缀，
+ * 不再生成无法追溯的哈希字段名。
  */
 export function formFieldName(label: string, scope = "field"): string {
-  return fieldNames[label] ?? `${scope}_${stableHash(label)}`;
+  return fieldNames[label] ?? `${scope}_field`;
+}
+
+const optionValues: Record<string, string | number> = {
+  启用: 1,
+  正常: "active",
+  运行中: "active",
+  停用: 0,
+  已停用: "disabled",
+  草稿: "draft",
+  待审核: "pending_review",
+  待配置: "pending_configuration",
+  已发布: "published",
+  维护中: "maintenance",
+  简体中文: "zh-CN",
+  English: "en-US",
+  "人民币 CNY": "CNY",
+  "美元 USD": "USD",
+  "Asia/Shanghai (UTC+8)": "Asia/Shanghai",
+  UTC: "UTC",
+  "零售 / 电商": "retail_ecommerce",
+  只读成员: "viewer",
+  "7 天": "7d",
+  所有成员可见: "all_members",
+  实时: "realtime",
+  "每 5 分钟": "5m",
+  需要人工确认: "manual_confirmation",
+  发送给渠道负责人: "channel_owner",
+  华东一号仓: "east_1",
+  "距离优先，库存次之": "distance_then_stock",
+  优先不拆单: "avoid_split",
+  自动转其他仓: "transfer_warehouse",
+  "30 分钟": "30m",
+  低于安全库存时提醒: "below_safety_stock",
+  允许销售可用库存: "sell_available_stock",
+  "500 元以下": "lte_500",
+  金额分级审批: "amount_tiered",
+  "每日 03:00": "03:00",
+  "站内信 + 企业微信": "in_app_wecom",
+  站内信: "in_app",
+  "站内信 + 邮件": "in_app_email",
+  "5 分钟内同类消息合并": "merge_5m",
+  忽略免打扰: "bypass_dnd",
+  "90 天": "90d",
+  阻止并通知管理员: "block_and_notify_admin",
+  "180 天": "180d",
+  "无操作 2 小时": "idle_2h",
+  "近 7 天": "last_7_days",
+  全部模块: "all",
+  全部等级: "all",
+  全部结果: "all",
+  "已付款 / 待揽收": "paid_awaiting_pickup",
+  天猫旗舰店: "tmall_flagship",
+  地址信息异常: "address_error",
+  高: "high",
+  "数码影音 / 耳机": "digital_audio_headphones",
+  "EBASE Audio": "ebase_audio",
+  深圳智联供应链: "shenzhen_zhilian",
+  周宁: "zhou_ning",
+  黑金会员: "black_gold",
+  图文: "article",
+  林知夏: "lin_zhixia",
+  满减券: "threshold_discount",
+  会员日: "member_day",
+  陈曦: "chen_xi",
+  "上一个 30 天": "previous_30_days",
+  按日: "day",
+  全部店铺: "all",
+  全部渠道: "all",
+  运营管理模板: "operations_management",
+};
+
+function optionHash(value: string): string {
+  let hash = 2166136261;
+  for (const character of value)
+    hash = Math.imul(hash ^ (character.codePointAt(0) ?? 0), 16777619);
+  return (hash >>> 0).toString(36);
+}
+
+/** 中文只作为选项标签，提交值始终为稳定的 ASCII 机器码。 */
+export function formOptionValue(label: string): string | number {
+  if (optionValues[label] !== undefined) return optionValues[label];
+  if (/^[A-Za-z0-9][A-Za-z0-9_.:/+-]*$/.test(label)) return label;
+  return `option_${optionHash(label)}`;
+}
+
+export function formOptionLabel(value: string | number): string {
+  return (
+    Object.entries(optionValues).find(
+      ([, code]) => String(code) === String(value),
+    )?.[0] ?? String(value)
+  );
 }

@@ -23,6 +23,19 @@ for (const file of files) {
       violations.push(`${relative(root, file)}:${line} 缺少稳定的 name 字段`);
     }
   }
+  for (const match of source.matchAll(/<option\b[^>]*>/gs)) {
+    if (!/\s(?:value|:value)=/.test(match[0])) {
+      const line = source.slice(0, match.index).split("\n").length;
+      violations.push(`${relative(root, file)}:${line} option 缺少显式 value`);
+    }
+    const staticValue = match[0].match(/\svalue="([^"]*)"/)?.[1] ?? "";
+    if (/[^\x00-\x7F]/.test(staticValue)) {
+      const line = source.slice(0, match.index).split("\n").length;
+      violations.push(
+        `${relative(root, file)}:${line} option value 不得使用中文显示文本`,
+      );
+    }
+  }
 }
 
 if (violations.length) {

@@ -49,7 +49,7 @@ async function load(): Promise<void> {
       form.name = member.name;
       form.email = member.email;
       form.status = member.status;
-      form.roleIds = member.roles.map((role) => Number(role.id));
+      form.roleIds = member.roles?.map((role) => Number(role.id)) ?? [];
     }
   } catch (exception) {
     showError(

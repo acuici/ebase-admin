@@ -20,17 +20,19 @@ const dashboardDates = ref<DateRangeValue>({
   preset: 3,
 });
 const orderQuery = ref(String(route.query.order_keyword || ""));
-const orderStatus = ref(String(route.query.order_status || "全部状态"));
+const orderStatus = ref(String(route.query.order_status || ""));
 const refreshing = ref(false);
 const orderStatusOptions = [
-  "全部状态",
-  "待付款",
-  "待发货",
-  "运输中",
-  "已发货",
-  "已完成",
-  "售后中",
-].map((value) => ({ label: value, value }));
+  { label: "全部状态", value: "" },
+  { label: "待付款", value: "pending_payment" },
+  { label: "待发货", value: "paid" },
+  { label: "运输中", value: "processing" },
+  { label: "已发货", value: "shipped" },
+  { label: "已完成", value: "completed" },
+  { label: "售后中", value: "after_sale" },
+];
+const orderStatusCode = (label: string) =>
+  orderStatusOptions.find((option) => option.label === label)?.value ?? label;
 const points = [42, 48, 45, 56, 53, 64, 60, 72, 66, 78, 73, 86, 79, 91];
 const previous = [38, 43, 42, 48, 49, 54, 51, 59, 57, 64, 62, 70, 68, 74];
 const points30 = [
@@ -310,7 +312,7 @@ const filteredOrders = computed(() =>
       !keyword ||
       order.some((cell) => String(cell).toLowerCase().includes(keyword));
     const matchesStatus =
-      orderStatus.value === "全部状态" || order[6] === orderStatus.value;
+      !orderStatus.value || orderStatusCode(order[6]) === orderStatus.value;
     return matchesKeyword && matchesStatus;
   }),
 );
@@ -359,15 +361,14 @@ function openOrder(orderNo: string) {
 }
 function clearOrderFilters() {
   orderQuery.value = "";
-  orderStatus.value = "全部状态";
+  orderStatus.value = "";
 }
 watch([orderQuery, orderStatus], () => {
   void router.replace({
     query: {
       ...route.query,
       order_keyword: orderQuery.value || undefined,
-      order_status:
-        orderStatus.value === "全部状态" ? undefined : orderStatus.value,
+      order_status: orderStatus.value || undefined,
     },
   });
 });

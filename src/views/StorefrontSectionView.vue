@@ -22,7 +22,7 @@ import {
 } from "../api/storefront";
 import ToolbarSelect from "../components/common/ToolbarSelect.vue";
 import TableState from "../components/common/TableState.vue";
-import { formFieldName } from "../utils/formFields";
+import { formFieldName, formOptionValue } from "../utils/formFields";
 type Config = {
   title: string;
   eyebrow: string;
@@ -38,6 +38,20 @@ const router = useRouter();
 const { success } = useToast();
 const query = ref(String(route.query.keyword || ""));
 const statusFilter = ref(String(route.query.status || ""));
+const storefrontStatusOptions = [
+  { label: "草稿", value: "draft" },
+  { label: "待配置", value: "pending_configuration" },
+  { label: "已发布", value: "published" },
+  { label: "正常", value: "active" },
+  { label: "运行中", value: "running" },
+  { label: "维护中", value: "maintenance" },
+];
+const storefrontStatusCode = (value: string) =>
+  storefrontStatusOptions.find((option) => option.label === value)?.value ??
+  value;
+const storefrontStatusLabel = (value: string) =>
+  storefrontStatusOptions.find((option) => option.value === value)?.label ??
+  value;
 const drawer = ref(false);
 const editing = ref(-1);
 const form = ref<string[]>([]);
@@ -309,10 +323,10 @@ const site = reactive({
   name: props.mode === "edit" ? "中国大陆站" : "",
   code: props.mode === "edit" ? "cn-main" : "",
   domain: props.mode === "edit" ? "shop.ebase.cn" : "",
-  language: "简体中文",
-  currency: "人民币 CNY",
-  timezone: "Asia/Shanghai (UTC+8)",
-  status: props.mode === "edit" ? "运行中" : "草稿",
+  language: "zh-CN",
+  currency: "CNY",
+  timezone: "Asia/Shanghai",
+  status: props.mode === "edit" ? "active" : "draft",
   brand: "EBASE 清透商业",
   email: "service@ebase.cn",
   seoTitle: "EBASE 清透商业｜品质生活精选",
@@ -322,18 +336,26 @@ const isEditor = computed(() => props.section === "site-editor");
 const config = computed(() => configs[props.section]);
 const remoteSites = ref<StorefrontSite[]>([]);
 const loadingSites = ref(false);
+const sitesLoaded = ref(false);
 async function loadSites() {
   if (props.section !== "sites") return;
   loadingSites.value = true;
   try {
-    remoteSites.value = await listStorefrontSites();
+    const data = await listStorefrontSites({
+      page: 1,
+      page_size: 100,
+      keyword: query.value || undefined,
+      status: statusFilter.value || undefined,
+    });
+    remoteSites.value = data.items;
+    sitesLoaded.value = true;
   } finally {
     loadingSites.value = false;
   }
 }
 onMounted(() => void loadSites());
 const sourceRows = computed(() =>
-  props.section === "sites" && remoteSites.value.length
+  props.section === "sites" && sitesLoaded.value
     ? remoteSites.value.map((site) => [
         site.name,
         site.site_code,
@@ -345,18 +367,32 @@ const sourceRows = computed(() =>
       ])
     : config.value?.rows || [],
 );
-const statusOptions = computed(() => [
-  { label: "全部状态", value: "" },
-  ...Array.from(
-    new Set(sourceRows.value.map((row) => row.at(-1) || "").filter(Boolean)),
-  ).map((value) => ({ label: value, value })),
-]);
+const statusOptions = computed(() => {
+  if (props.section === "sites")
+    return [
+      { label: "全部状态", value: "" },
+      ...storefrontStatusOptions.filter((option) =>
+        ["draft", "active", "maintenance", "disabled"].includes(option.value),
+      ),
+    ];
+  return [
+    { label: "全部状态", value: "" },
+    ...Array.from(
+      new Set(sourceRows.value.map((row) => row.at(-1) || "").filter(Boolean)),
+    ).map((value) => ({
+      label: storefrontStatusLabel(storefrontStatusCode(value)),
+      value: storefrontStatusCode(value),
+    })),
+  ];
+});
 const rows = computed(() => {
+  if (props.section === "sites") return sourceRows.value;
   const key = query.value.trim().toLowerCase();
   return sourceRows.value.filter(
     (row) =>
       (!key || row.join(" ").toLowerCase().includes(key)) &&
-      (!statusFilter.value || row.at(-1) === statusFilter.value),
+      (!statusFilter.value ||
+        storefrontStatusCode(row.at(-1) || "") === statusFilter.value),
   );
 });
 watch(
@@ -375,6 +411,7 @@ watch([query, statusFilter], () => {
       status: statusFilter.value || undefined,
     },
   });
+  if (props.section === "sites") void loadSites();
 });
 function openCreate() {
   if (props.section === "sites") {
@@ -384,13 +421,16 @@ function openCreate() {
   editing.value = -1;
   validation.value = "";
   form.value = config.value.columns.map((column, index) =>
-    index === config.value.columns.length - 1 ? "草稿" : "",
+    index === config.value.columns.length - 1 ? "draft" : "",
   );
   drawer.value = true;
 }
 function openEdit(row: string[]) {
   editing.value = config.value.rows.indexOf(row);
   form.value = [...row];
+  form.value[form.value.length - 1] = String(
+    formOptionValue(form.value.at(-1) || ""),
+  );
   validation.value = "";
   drawer.value = true;
 }
@@ -421,7 +461,7 @@ function saveSite() {
     default_locale: site.language,
     currency: site.currency,
     timezone: site.timezone,
-    status: site.status === "运行中" ? "active" : "draft",
+    status: site.status,
     default_seo_title: site.seoTitle,
     default_seo_description: site.seoDescription,
   };
@@ -490,27 +530,27 @@ function saveSite() {
             ><label
               ><span>默认语言</span
               ><select v-model="site.language" name="default_locale">
-                <option>简体中文</option>
-                <option>English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="en-US">English</option>
               </select></label
             ><label
               ><span>默认币种</span
               ><select v-model="site.currency" name="currency">
-                <option>人民币 CNY</option>
-                <option>美元 USD</option>
+                <option value="CNY">人民币 CNY</option>
+                <option value="USD">美元 USD</option>
               </select></label
             ><label
               ><span>默认时区</span
               ><select v-model="site.timezone" name="timezone">
-                <option>Asia/Shanghai (UTC+8)</option>
-                <option>UTC</option>
+                <option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option>
+                <option value="UTC">UTC</option>
               </select></label
             ><label
               ><span>站点状态</span
               ><select v-model="site.status" name="status">
-                <option>草稿</option>
-                <option>运行中</option>
-                <option>维护中</option>
+                <option value="draft">草稿</option>
+                <option value="active">运行中</option>
+                <option value="maintenance">维护中</option>
               </select></label
             >
           </div>
@@ -719,11 +759,11 @@ function saveSite() {
                 v-model="form[index]"
                 :name="formFieldName(column, props.section)"
               >
-                <option>草稿</option>
-                <option>待配置</option>
-                <option>已发布</option>
-                <option>正常</option>
-                <option>运行中</option></select
+                <option value="draft">草稿</option>
+                <option value="pending_configuration">待配置</option>
+                <option value="published">已发布</option>
+                <option value="active">正常</option>
+                <option value="running">运行中</option></select
               ><input
                 v-else
                 v-model="form[index]"

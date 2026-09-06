@@ -21,8 +21,12 @@ const router = useRouter();
 const route = useRoute();
 const { error: showError, info } = useToast();
 const query = ref(String(route.query.keyword || ""));
-const tab = ref(String(route.query.status || "全部成员"));
-const tabs = ["全部成员", "正常", "已停用"];
+const tab = ref(String(route.query.status || ""));
+const tabs = [
+  { label: "全部成员", value: "" },
+  { label: "正常", value: "1" },
+  { label: "已停用", value: "0" },
+];
 const members = ref<AdminMember[]>([]);
 const total = ref(0);
 const loading = ref(true);
@@ -36,8 +40,8 @@ const disabledMembers = computed(
 );
 
 function statusFilter(): number | undefined {
-  if (tab.value === "正常") return 1;
-  if (tab.value === "已停用") return 0;
+  if (tab.value === "1") return 1;
+  if (tab.value === "0") return 0;
   return undefined;
 }
 
@@ -66,7 +70,7 @@ async function loadMembers(): Promise<void> {
 function memberRole(member: AdminMember): string {
   return member.is_super === 1
     ? "超级管理员"
-    : member.roles.map((role) => role.name).join("、") || "未分配角色";
+    : member.roles?.map((role) => role.name).join("、") || "未分配角色";
 }
 
 function displayStatus(member: AdminMember): string {
@@ -84,7 +88,7 @@ watch([query, tab], () => {
     query: {
       ...route.query,
       keyword: query.value || undefined,
-      status: tab.value === "全部成员" ? undefined : tab.value,
+      status: tab.value || undefined,
     },
   });
   searchTimer = window.setTimeout(() => {
@@ -141,11 +145,11 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer));
     <div class="member-tabs">
       <button
         v-for="item in tabs"
-        :key="item"
-        :class="{ active: tab === item }"
-        @click="tab = item"
+        :key="item.value"
+        :class="{ active: tab === item.value }"
+        @click="tab = item.value"
       >
-        {{ item }}
+        {{ item.label }}
       </button>
     </div>
 
@@ -182,16 +186,16 @@ onBeforeUnmount(() => window.clearTimeout(searchTimer));
       <TableState
         v-else-if="!members.length"
         state="empty"
-        :filtered="Boolean(query || tab !== '全部成员')"
+        :filtered="Boolean(query || tab)"
         title="没有找到成员"
         description="当前条件下没有成员，调整状态或搜索关键词后再试。"
         ><template #action
           ><button
-            v-if="query || tab !== '全部成员'"
+            v-if="query || tab"
             class="button secondary"
             @click="
               query = '';
-              tab = '全部成员';
+              tab = '';
             "
           >
             清除筛选
