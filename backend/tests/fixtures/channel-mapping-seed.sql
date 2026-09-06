@@ -2,11 +2,11 @@
 SET NAMES utf8mb4;
 INSERT INTO roles (id, name, permission_codes, is_active, created_at, updated_at) VALUES
 (1, '测试超级管理员', '*', 1, NOW(), NOW()),
-(2, '测试普通角色', 'channel.store.read,channel.product.read,channel.mapping.read,channel.mapping.manage,channel.order.import,channel.order_exception.read,channel.order_exception.resolve,secondary.operation.manage,refund.refund.manage,inventory.warehouse.manage,catalog.category.manage,supply.supplier.manage,customer.segment.manage,marketing.approval.manage', 1, NOW(), NOW()),
+(2, '测试普通角色', 'channel.store.read,channel.product.read,channel.mapping.read,channel.mapping.manage,channel.order.import,channel.order_exception.read,channel.order_exception.resolve,secondary.operation.manage,refund.refund.manage,inventory.warehouse.read,inventory.warehouse.manage,catalog.category.manage,supply.supplier.manage,customer.segment.manage,marketing.approval.manage', 1, NOW(), NOW()),
 (3, '测试未授权角色', '', 1, NOW(), NOW());
-INSERT INTO members (id, email, name, password_hash, status, is_super, created_at, updated_at) VALUES
-(1, 'test-admin@example.invalid', '测试管理员', '$2y$10$qamLjlC1TQaxitpOBFdHFeoRrCK8ccwvGndfc9.JKSQ2An8Co.w7S', 1, 1, NOW(), NOW()),
-(2, 'test-operator@example.invalid', '测试运营专员', '$2y$10$qamLjlC1TQaxitpOBFdHFeoRrCK8ccwvGndfc9.JKSQ2An8Co.w7S', 1, 0, NOW(), NOW());
+INSERT INTO members (id, email, name, member_code, password_hash, status, is_super, created_at, updated_at) VALUES
+(1, 'test-admin@example.invalid', '测试管理员', 'test_admin', '$2y$10$qamLjlC1TQaxitpOBFdHFeoRrCK8ccwvGndfc9.JKSQ2An8Co.w7S', 1, 1, NOW(), NOW()),
+(2, 'test-operator@example.invalid', '测试运营专员', 'test_operator', '$2y$10$qamLjlC1TQaxitpOBFdHFeoRrCK8ccwvGndfc9.JKSQ2An8Co.w7S', 1, 0, NOW(), NOW());
 INSERT INTO member_roles (member_id, role_id, created_at) VALUES (1,1,NOW()), (2,2,NOW());
 INSERT INTO products (id, product_no, name, brand, category, description, status, created_at, updated_at) VALUES (1, 'TEST-PRODUCT-001', '测试商品', '测试品牌', '测试类目', '测试商品描述', 'active', NOW(), NOW());
 INSERT INTO product_skus (id, product_id, sku_code, name, specs, price, market_price, stock_quantity, reserved_quantity, status, created_at, updated_at) VALUES (1,1,'INTERNAL-RED-01','测试红色 SKU','{"color":"red"}',100.00,120.00,10,0,'active',NOW(),NOW()),(2,1,'INTERNAL-BLUE-01','测试蓝色 SKU','{"color":"blue"}',100.00,120.00,1,0,'active',NOW(),NOW());

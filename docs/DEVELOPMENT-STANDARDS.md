@@ -251,3 +251,6 @@ npm run build
 - `secondary-operations` 的 refunds、warehouses、categories、suppliers、segments、approvals 必须使用资源级字段白名单和独立 create/update Validate；禁止请求字段动态透传数据库。
 - 运营筛选所需事实字段与关系由可回滚的 `database/schema/26-operations-filter-fields.sql`、`27-categories.sql` 提供，对应 `.down.sql` 必须可执行。
 - `sales_status` 接受前端值 `active`、`draft`、`archived` 并直接映射商品 `status`；`validity` 接受 `active`、`expiring`、`ended` 并依据优惠券时间事实；`turnover_days` 接受 `lte_7`、`8_to_30`、`gt_30` 并依据最近 30 天销售聚合。
+- 仓库资源必须使用 `/api/v1/warehouses` 真实接口；`owner_code` 关联启用成员的 `members.member_code`，禁止使用中文姓名或成员自增 ID 作为负责人值。仓库与 `product_skus.warehouse_code`、`suppliers` 通过真实字段关联。
+- 仓库负责人交接写入 `warehouse_handover_records`：临时交接可由超级管理员或具备 `inventory.warehouse.handover` 的成员恢复；成员停用时撤销会话、清除权限缓存并回收其直接负责人关系；成员重新启用后可恢复仍有效的临时交接。默认岗位角色只提供权限模板，不自动授予成员权限。
+- 仓库 DELETE 语义为停用：更新 `warehouses.status=disabled`，保留库存关联、负责人交接和审计历史，禁止物理删除导致外键或事实链断裂。

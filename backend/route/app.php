@@ -90,6 +90,19 @@ Route::group('api/v1/admin', function () {
     Route::delete('roles/:id', 'RoleController/delete')->middleware(\app\common\middleware\PermissionMiddleware::class, 'admin.role.delete');
 })->middleware(\app\common\middleware\AuthMiddleware::class);
 
+Route::group('api/v1/warehouses', function () {
+    Route::get('/', 'WarehouseController/index')->middleware(\app\common\middleware\PermissionMiddleware::class, 'inventory.warehouse.read');
+    Route::post('/', 'WarehouseController/create')->middleware(\app\common\middleware\PermissionMiddleware::class, 'inventory.warehouse.manage');
+    Route::get('/members', 'WarehouseController/members')->middleware(\app\common\middleware\PermissionMiddleware::class, 'inventory.warehouse.read');
+    Route::get('/:id/handovers', 'WarehouseController/handovers')->middleware(\app\common\middleware\PermissionMiddleware::class, 'inventory.warehouse.read');
+    Route::get('/:id', 'WarehouseController/read')->middleware(\app\common\middleware\PermissionMiddleware::class, 'inventory.warehouse.read');
+    Route::put('/:id', 'WarehouseController/update')->middleware(\app\common\middleware\PermissionMiddleware::class, 'inventory.warehouse.manage');
+    Route::delete('/:id', 'WarehouseController/delete')->middleware(\app\common\middleware\PermissionMiddleware::class, 'inventory.warehouse.manage');
+    Route::post('/:id/assign', 'WarehouseController/assign')->middleware(\app\common\middleware\PermissionMiddleware::class, 'inventory.warehouse.manage');
+    Route::post('/:id/handover', 'WarehouseController/handover')->middleware(\app\common\middleware\PermissionMiddleware::class, 'inventory.warehouse.handover');
+    Route::post('/:id/restore', 'WarehouseController/restore')->middleware(\app\common\middleware\PermissionMiddleware::class, 'inventory.warehouse.handover');
+})->middleware(\app\common\middleware\AuthMiddleware::class);
+
 Route::group('api/v1/secondary-operations', function () {
     Route::post('/:type', 'SecondaryOperationsController/create')->middleware(\app\common\middleware\PermissionMiddleware::class, 'secondary.operation.manage');
     Route::put('/:type/:id', 'SecondaryOperationsController/update')->middleware(\app\common\middleware\PermissionMiddleware::class, 'secondary.operation.manage');

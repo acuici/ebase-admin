@@ -9,7 +9,7 @@
 - 图标：Lucide Vue Next。
 - 数据：成员目录与订单管理已接入统一 API Client 和 ThinkPHP 8 API；其余部分页面仍使用内置模拟数据，部分 CRUD、流程表单、收藏和最近访问使用 `localStorage` 持久化。
 - 认证：已有登录交互原型，但尚未接入 JWT、刷新令牌、验证码或后端会话。
-- 后端：ThinkPHP 8 已提供订单、商品、库存、会员、物流、内容、优惠券、营销、成员、独立站列表的服务端筛选与统一分页；二级 refunds、warehouses、categories、suppliers、segments、approvals 使用显式字段白名单和审计日志。
+- 后端：ThinkPHP 8 已提供订单、商品、库存、会员、物流、内容、优惠券、营销、成员、独立站列表的服务端筛选与统一分页；仓库管理已切换为 `/api/v1/warehouses` 真实持久化接口，负责人关联 `members.member_code`，库存汇总关联 `product_skus.warehouse_code`；二级 refunds、categories、suppliers、segments、approvals 使用显式字段白名单和审计日志。
 
 因此，“页面存在”不等于“生产业务能力已经完成”。接后端时不得保留 `localStorage` 作为真实业务数据源。
 
